@@ -83,7 +83,7 @@ module.exports = {
                         name: '💡 Need Help?',
                         value: 
                             `• Use \`${prefix}support\` for support server link\n` +
-                            `• Visit: Website Soon\n` +
+                            `• Visit: Website Soon!\n` +
                             `• Discord: https://discord.gg/qKKBqNSD65`,
                         inline: false
                     }
