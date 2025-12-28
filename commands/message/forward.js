@@ -6,7 +6,7 @@ const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
 module.exports = {
     name: 'forward',
-    aliases: ['ff', 'fastforward', 'fwd', 'seek'],
+    aliases: ['f', 'fastforward', 'fwd', 'seek'],
     description: 'Fast forward in the current track',
     securityToken: COMMAND_SECURITY_TOKEN,
     

@@ -35,10 +35,10 @@ module.exports = {
                     {
                         name: '🎧 Essential Commands',
                         value: 
-                            `\`${prefix}play <song/url>\` or \`/play\` - Play music\n` +
+                            `\`${prefix}play <song/url>\` and \`${prefix}p \` or \`/play\` - Play music\n` +
                             `\`${prefix}pause\` or \`/pause\` - Pause playback\n` +
                             `\`${prefix}resume\` or \`/resume\` - Resume playback\n` +
-                            `\`${prefix}skip\` or \`/skip\` - Skip current song\n` +
+                            `\`${prefix}skip\` and \`${prefix}s \`  or \`/skip\` - Skip current song\n` +
                             `\`${prefix}stop\` or \`/stop\` - Stop and clear queue\n` +
                             `\`${prefix}join\` or \`/join\` - Join your voice channel`,
                         inline: false
@@ -46,10 +46,10 @@ module.exports = {
                     {
                         name: '📋 Queue Management',
                         value: 
-                            `\`${prefix}queue\` or \`/queue\` - View song queue\n` +
-                            `\`${prefix}nowplaying\` - Show current song\n` +
-                            `\`${prefix}loop [mode]\` or \`/loop\` - Toggle loop (off/track/queue)\n` +
-                            `\`${prefix}shuffle\` or \`/shuffle\` - Shuffle queue\n` +
+                            `\`${prefix}queue\` and \`${prefix}q \`  or \`/queue\` - View song queue\n` +
+                            `\`${prefix}nowplaying\` and \`${prefix}np \`  - Show current song\n` +
+                            `\`${prefix}loop [mode]\` and \`${prefix}l \`  or \`/loop\` - Toggle loop (off/track/queue)\n` +
+                            `\`${prefix}shuffle\` and \`${prefix}sh \`  or \`/shuffle\` - Shuffle queue\n` +
                             `\`${prefix}clear [from]\` or \`/clear\` - Clear queue\n` +
                             `\`${prefix}remove <position>\` or \`/remove\` - Remove song\n` +
                             `\`${prefix}move <from> <to>\` or \`/move\` - Move songs`,
@@ -58,10 +58,10 @@ module.exports = {
                     {
                         name: '⏯️ Playback Control',
                         value: 
-                            `\`${prefix}forward [sec]\` or \`/forward\` - Fast forward ⏩\n` +
+                            `\`${prefix}forward [sec]\` and \`${prefix}f [SEC]\`  or \`/forward\` - Fast forward ⏩\n` +
                             `\`${prefix}rewind [sec]\` or \`/rewind\` - Rewind ⏪\n` +
-                            `\`${prefix}jump <position>\` or \`/jump\` - Jump to track\n` +
-                            `\`${prefix}volume [1-100]\` or \`/volume\` - Adjust volume\n` +
+                            `\`${prefix}jump <position>\` and \`${prefix}j \`  or \`/jump\` - Jump to track\n` +
+                            `\`${prefix}volume [1-100]\` and \`${prefix}v [1-100]\`  or \`/volume\` - Adjust volume\n` +
                             `\`/autoplay\` - Toggle autoplay mode`,
                         inline: false
                     },
@@ -83,7 +83,7 @@ module.exports = {
                         name: '💡 Need Help?',
                         value: 
                             `• Use \`${prefix}support\` for support server link\n` +
-                            `• Visit: https://oureonbh.com\n` +
+                            `• Visit: Website Soon\n` +
                             `• Discord: https://discord.gg/qKKBqNSD65`,
                         inline: false
                     }
