@@ -62,7 +62,7 @@ module.exports = {
             await player.seek(newPosition);
 
             const embed = new EmbedBuilder()
-                .setColor('#3498DB')
+                .setColor('#2F3767')
                 .setTitle('⏪ Rewind')
                 .setDescription(`**${currentTrack.info.title}**`)
                 .addFields(

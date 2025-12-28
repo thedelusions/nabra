@@ -172,7 +172,7 @@ class CentralEmbedHandler {
                 const statusEmoji = trackInfo.paused ? '⏸️' : '▶️';
                 const statusText = trackInfo.paused ? 'Paused' : 'Now Playing';
                 const loopEmoji = this.getLoopEmoji(trackInfo.loop);
-                const embedColor = trackInfo.paused ? 0xFFA500 : 0x9966ff;
+                const embedColor = trackInfo.paused ? 0xFFA500 : 0x2F3767;
                 
                 const validThumbnail = this.validateThumbnail(trackInfo.thumbnail);
                 
@@ -217,19 +217,18 @@ class CentralEmbedHandler {
                 .setDescription([
                     '',
                     '- Simply type a **song name** or **YouTube link** to start the party!',
-                    '- In free version I only support **YouTube** only.',
                     '',
                     '✨ *Ready to fill this place with amazing music?*'
                 ].join('\n'))
-                .setColor(0x9966ff) 
+                .setColor(0x2F3767) 
                 .addFields(
                     {
                         name: '🎯 Quick Examples',
                         value: [
-                            '• `shape of you`',
+                            '• `Deep by Anathema`',
                             '• `lofi hip hop beats`',
                             '• `https://youtu.be/dQw4w9WgXcQ`',
-                            '• `imagine dragons believer`'
+                            '• `I Will Fail You`'
                         ].join('\n'),
                         inline: true
                     },

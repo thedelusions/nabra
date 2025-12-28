@@ -68,7 +68,7 @@ module.exports = {
             await player.seek(newPosition);
 
             const embed = new EmbedBuilder()
-                .setColor('#00FF00')
+                .setColor('#2F3767')
                 .setTitle('⏩ Fast Forward')
                 .setDescription(`**${currentTrack.info.title}**`)
                 .addFields(

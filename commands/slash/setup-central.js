@@ -94,7 +94,7 @@ module.exports = {
                     { name: '🔊 Voice Channel', value: voiceChannel ? `<#${voiceChannel.id}>` : 'Not set', inline: true },
                     { name: '👥 Allowed Role', value: allowedRole ? `<@&${allowedRole.id}>` : 'Everyone', inline: true }
                 )
-                .setColor(0x00FF00)
+                .setColor(0x2F3767)
                 .setFooter({ text: 'Users can now type song names in the channel to play music!' });
 
             await interaction.editReply({ embeds: [successEmbed] });
@@ -110,7 +110,7 @@ module.exports = {
                             '• Use normal commands (`!play`, `/play`) in other channels\n\n' +
                             '⚠️ This message will be automatically deleted in 10 seconds!'
                         )
-                        .setColor(0x1DB954)
+                        .setColor(0x2F3767)
                         .setFooter({ text: 'Enjoy your music!' });
             
                     const msg = await channel.send({ embeds: [usageEmbed] });

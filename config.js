@@ -42,8 +42,8 @@ class EnterpriseConfigurationManager {
             bot: {
                 prefix: EnvironmentVariableProcessor.BOT_PREFIX || "n!",  // 👈 prefix (!, ?, etc)
                 ownerIds: ["1004206704994566164"],      // 👈 ADD YOUR DISCORD ID HERE
-                embedColor: 0x00AE86,               // 👈 Bot embed color (hex)
-                supportServer: "https://discord.gg/xQF9f9yUEM",    // 👈 Your support server link
+                embedColor: 0x2F3767,               // 👈 Bot embed color (hex)
+                supportServer: "https://discord.gg/qKKBqNSD65",    // 👈 Your support server link
                 defaultStatus: "🎵 Ready for music!"         // 👈 Bot status message
             },
             

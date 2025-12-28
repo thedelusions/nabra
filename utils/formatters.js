@@ -67,7 +67,7 @@ class MusicFormatters {
         const queuePosition = player.queue.size;
 
         const embed = new EmbedBuilder()
-            .setColor('#00FF00')
+            .setColor('#2F3767')
             .setTitle(`${sourceEmoji} ${isPlaying ? 'Now Playing' : 'Added to Queue'}`)
             .setDescription(`**[${track.info.title}](${track.info.uri})**`)
             .addFields(
@@ -94,7 +94,7 @@ class MusicFormatters {
      */
     static createPlaylistAddedEmbed(playlistInfo, trackCount, requester, firstTrack = null) {
         const embed = new EmbedBuilder()
-            .setColor('#9B59B6')
+            .setColor('#2F3767')
             .setTitle('📚 Playlist Added to Queue')
             .setDescription(`**${playlistInfo.name || 'Unknown Playlist'}**`)
             .addFields(
@@ -136,7 +136,7 @@ class MusicFormatters {
         const progress = this.createProgressBar(player.position, track.info.length);
 
         const embed = new EmbedBuilder()
-            .setColor('#3498DB')
+            .setColor('#2F3767')
             .setTitle(`${sourceEmoji} Now Playing`)
             .setDescription(`**[${track.info.title}](${track.info.uri})**`)
             .addFields(

@@ -6,7 +6,7 @@ class EmbedUtils {
         return new EmbedBuilder()
             .setTitle(`✅ ${title}`)
             .setDescription(description)
-            .setColor(0x00FF00)
+            .setColor(0x2F3767)
             .setTimestamp();
     }
     
