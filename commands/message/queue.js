@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const shiva = require('../../shiva');
+const MusicFormatters = require('../../utils/formatters');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
@@ -35,9 +36,9 @@ module.exports = {
             );
 
             if (!conditions.hasActivePlayer) {
-                const embed = new EmbedBuilder().setDescription('❌ No music is currently playing!');
+                const embed = MusicFormatters.createErrorEmbed('No music is currently playing!');
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             const player = conditions.player;
@@ -45,51 +46,75 @@ module.exports = {
             const currentTrack = player.current;
             
             if (!currentTrack && queue.size === 0) {
-                const embed = new EmbedBuilder().setDescription('📜 Queue is empty!');
+                const embed = MusicFormatters.createInfoEmbed('Queue is empty!', '#9B59B6');
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             const page = parseInt(args[0]) || 1;
-            const songsPerPage = 15;
+            const songsPerPage = 10;
             const startIndex = (page - 1) * songsPerPage;
             const endIndex = startIndex + songsPerPage;
-            const totalPages = Math.ceil(queue.size / songsPerPage);
+            const totalPages = Math.ceil(queue.size / songsPerPage) || 1;
 
-            let description = '';
+            const embed = new EmbedBuilder()
+                .setColor('#9B59B6')
+                .setTitle('📜 Music Queue')
+                .setTimestamp();
 
+            // Now playing
             if (currentTrack) {
-                const duration = formatDuration(currentTrack.info.length);
-                description += `🎵 **Now Playing**\n**${currentTrack.info.title}**\nBy: ${currentTrack.info.author}\nDuration: ${duration}\nRequested by: <@${currentTrack.info.requester.id}>\n\n`;
+                const sourceEmoji = MusicFormatters.getSourceEmoji(currentTrack.info.sourceName);
+                const duration = MusicFormatters.formatDuration(currentTrack.info.length);
+                const position = MusicFormatters.formatDuration(player.position);
+                const statusEmoji = MusicFormatters.getStatusEmoji(player.playing, player.paused);
+                
+                embed.addFields({
+                    name: `${statusEmoji} Now Playing`,
+                    value: `${sourceEmoji} **[${currentTrack.info.title}](${currentTrack.info.uri})**\n` +
+                           `🎤 ${currentTrack.info.author} | ⏱️ ${position}/${duration}\n` +
+                           `👤 Requested by <@${currentTrack.info.requester.id}>`,
+                    inline: false
+                });
             }
 
+            // Queue
             if (queue.size > 0) {
                 const queueTracks = Array.from(queue).slice(startIndex, endIndex);
                 if (queueTracks.length > 0) {
-                    description += `📋 **Up Next (${queue.size} songs)**\n`;
-                    description += queueTracks.map((track, index) => {
+                    const queueList = queueTracks.map((track, index) => {
                         const position = startIndex + index + 1;
-                        const duration = formatDuration(track.info.length);
-                        return `\`${position}.\` **${track.info.title}** \`[${duration}]\`\nRequested by: <@${track.info.requester.id}>`;
+                        const duration = MusicFormatters.formatDuration(track.info.length);
+                        const sourceEmoji = MusicFormatters.getSourceEmoji(track.info.sourceName);
+                        return `\`${position}.\` ${sourceEmoji} **${track.info.title.substring(0, 50)}${track.info.title.length > 50 ? '...' : ''}**\n    ⏱️ \`${duration}\` | 👤 <@${track.info.requester.id}>`;
                     }).join('\n\n');
+
+                    embed.addFields({
+                        name: `📋 Up Next (${queue.size} ${queue.size === 1 ? 'song' : 'songs'})`,
+                        value: queueList,
+                        inline: false
+                    });
                 }
 
-                if (totalPages > 1) {
-                    description += `\n\nPage ${page}/${totalPages}`;
-                } else {
-                    description += `\n\nTotal: ${queue.size} songs in queue`;
-                }
+                // Queue stats
+                const totalDuration = Array.from(queue).reduce((acc, track) => acc + (track.info.length || 0), 0);
+                const totalDurationFormatted = MusicFormatters.formatDuration(totalDuration);
+                
+                embed.setFooter({ 
+                    text: `Page ${page}/${totalPages} | Total Duration: ${totalDurationFormatted} | Loop: ${player.loop || 'Off'}` 
+                });
+            } else {
+                embed.setFooter({ text: 'No songs in queue' });
             }
 
-            const embed = new EmbedBuilder().setDescription(description);
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 10000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 15000));
 
         } catch (error) {
             console.error('Queue command error:', error);
-            const embed = new EmbedBuilder().setDescription('❌ An error occurred while fetching the queue!');
+            const embed = MusicFormatters.createErrorEmbed('An error occurred while fetching the queue!');
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
         }
     }
 };

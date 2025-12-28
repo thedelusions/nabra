@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const shiva = require('../../shiva');
+const MusicFormatters = require('../../utils/formatters');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
@@ -35,23 +36,33 @@ module.exports = {
             );
 
             if (!conditions.hasActivePlayer) {
-                const embed = new EmbedBuilder().setDescription('❌ No music is currently playing!');
+                const embed = MusicFormatters.createErrorEmbed('No music is currently playing!');
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             if (!conditions.isPaused) {
-                const embed = new EmbedBuilder().setDescription('❌ Music is not paused!');
+                const embed = MusicFormatters.createWarningEmbed('Music is not paused!');
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             const player = conditions.player;
+            const currentTrack = player.current;
             player.pause(false);
 
-            const embed = new EmbedBuilder().setDescription('▶️ Music resumed!');
+            const embed = new EmbedBuilder()
+                .setColor('#00FF00')
+                .setTitle('▶️ Music Resumed')
+                .setTimestamp();
+
+            if (currentTrack) {
+                const sourceEmoji = MusicFormatters.getSourceEmoji(currentTrack.info.sourceName);
+                embed.setDescription(`${sourceEmoji} **${currentTrack.info.title}**`);
+            }
+
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
 
         } catch (error) {
             console.error('Resume command error:', error);

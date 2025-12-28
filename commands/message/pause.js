@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const shiva = require('../../shiva');
+const MusicFormatters = require('../../utils/formatters');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
@@ -36,23 +37,34 @@ module.exports = {
 
             const errorMsg = checker.getErrorMessage(conditions, 'pause');
             if (errorMsg) {
-                const embed = new EmbedBuilder().setDescription(errorMsg);
+                const embed = MusicFormatters.createErrorEmbed(errorMsg);
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             const player = conditions.player;
 
             if (player.paused) {
-                const embed = new EmbedBuilder().setDescription('❌ Music is already paused!');
+                const embed = MusicFormatters.createWarningEmbed('Music is already paused!');
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
+            const currentTrack = player.current;
             player.pause(true);
-            const embed = new EmbedBuilder().setDescription('⏸️ Music paused!');
+            
+            const embed = new EmbedBuilder()
+                .setColor('#FFA500')
+                .setTitle('⏸️ Music Paused')
+                .setTimestamp();
+
+            if (currentTrack) {
+                const sourceEmoji = MusicFormatters.getSourceEmoji(currentTrack.info.sourceName);
+                embed.setDescription(`${sourceEmoji} **${currentTrack.info.title}**`);
+            }
+
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
 
         } catch (error) {
             console.error('Pause command error:', error);

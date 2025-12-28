@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const shiva = require('../../shiva');
+const MusicFormatters = require('../../utils/formatters');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
@@ -36,25 +37,41 @@ module.exports = {
 
             const errorMsg = checker.getErrorMessage(conditions, 'skip');
             if (errorMsg) {
-                const embed = new EmbedBuilder().setDescription(errorMsg);
+                const embed = MusicFormatters.createErrorEmbed(errorMsg);
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             const player = conditions.player;
-            const currentTrack = player.current?.info?.title || 'Unknown';
+            const currentTrack = player.current;
+            const trackTitle = currentTrack?.info?.title || 'Unknown';
+            const nextTrack = player.queue[0];
 
             player.stop();
 
-            const embed = new EmbedBuilder().setDescription(`⏭️ Skipped: **${currentTrack}**`);
+            const embed = new EmbedBuilder()
+                .setColor('#FFA500')
+                .setTitle('⏭️ Skipped')
+                .setDescription(`**${trackTitle}**`)
+                .setTimestamp();
+
+            if (nextTrack) {
+                const sourceEmoji = MusicFormatters.getSourceEmoji(nextTrack.info.sourceName);
+                embed.addFields({
+                    name: '▶️ Up Next',
+                    value: `${sourceEmoji} ${nextTrack.info.title}`,
+                    inline: false
+                });
+            }
+
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
 
         } catch (error) {
             console.error('Skip command error:', error);
-            const embed = new EmbedBuilder().setDescription('❌ An error occurred while skipping the song!');
+            const embed = MusicFormatters.createErrorEmbed('An error occurred while skipping the song!');
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
         }
     }
 };

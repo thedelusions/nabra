@@ -30,6 +30,7 @@ module.exports = {
         const ConditionChecker = require('../../utils/checks');
         const PlayerHandler = require('../../utils/player');
         const ErrorHandler = require('../../utils/errorHandler');
+        const MusicFormatters = require('../../utils/formatters');
         
         const query = interaction.options.getString('query');
 
@@ -43,9 +44,9 @@ module.exports = {
 
             const errorMsg = checker.getErrorMessage(conditions, 'play');
             if (errorMsg) {
-                const embed = new EmbedBuilder().setDescription(errorMsg);
+                const embed = MusicFormatters.createErrorEmbed(errorMsg);
                 return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 5000));
             }
 
             const playerHandler = new PlayerHandler(client);
@@ -58,25 +59,31 @@ module.exports = {
             const result = await playerHandler.playSong(player, query, interaction.user);
 
             if (result.type === 'track') {
-                const embed = new EmbedBuilder().setDescription(`✅ Added to queue: **${result.track.info.title}**`);
+                const isPlaying = !player.playing && player.queue.size === 0;
+                const embed = MusicFormatters.createTrackAddedEmbed(result.track, player, isPlaying);
                 return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 10000));
             } else if (result.type === 'playlist') {
-                const embed = new EmbedBuilder().setDescription(`✅ Added **${result.tracks}** songs from playlist: **${result.name}**`);
+                const embed = MusicFormatters.createPlaylistAddedEmbed(
+                    { name: result.name },
+                    result.tracks,
+                    interaction.user,
+                    result.firstTrack
+                );
                 return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 10000));
             } else {
-                const embed = new EmbedBuilder().setDescription('❌ No results found for your query!');
+                const embed = MusicFormatters.createErrorEmbed('No results found for your query!');
                 return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 5000));
             }
 
         } catch (error) {
             console.error('Play slash command error:', error);
             ErrorHandler.handle(error, 'play slash command');
-            const embed = new EmbedBuilder().setDescription('❌ An error occurred while trying to play music!');
+            const embed = MusicFormatters.createErrorEmbed('An error occurred while trying to play music!');
             return interaction.editReply({ embeds: [embed] })
-                .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 5000));
         }
     }
 };

@@ -25,12 +25,12 @@ module.exports = {
                 .setColor(0x1DB954)
                 .setDescription(
                     'Need help or have questions? Join our official support server:\n' +
-                    '[Support Server](https://discord.gg/xQF9f9yUEM)\n\n' +
-                    'For direct inquiries, contact: **GlaceYT**\n\n' +
-                    'Website: https://glaceyt.com'
+                    '[Support Server](https://discord.gg/qKKBqNSD65)\n\n' +
+                    'For direct inquiries, contact: **<@629724452862820362>**\n\n' +
+                    'Website: https://oureonbh.com'
                 )
                 .setTimestamp()
-                .setFooter({ text: 'Ultimate Music Bot • Developed by GlaceYT' });
+                .setFooter({ text: 'Nabra Music Bot • Developed by Bios' });
             
             await message.reply({ embeds: [embed] });
         } catch (error) {

@@ -3,7 +3,7 @@
  * 
  * @fileoverview 
  * @version 1.0.0
- * @author GlaceYT
+ * @author thedelusions
  */
 
 const DiscordRESTClientManager = require('discord.js').REST;
@@ -137,13 +137,11 @@ class ClientInitializationManager {
     /**
      * Activate comprehensive status management system
      * 
-     * Initializes bot status with server count and activity management
+     * Initializes bot status with default ready message
      */
     async activateStatusManagementSystem() {
         try {
-            await this.clientRuntimeInstance.statusManager.setServerCountStatus(
-                this.clientRuntimeInstance.guilds.cache.size
-            );
+            await this.clientRuntimeInstance.statusManager.setDefaultStatus();
             this.initializationStatus.statusSystemReady = true;
             
         } catch (statusSystemException) {

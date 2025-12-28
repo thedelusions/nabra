@@ -270,7 +270,7 @@ class StatusManager {
         this.stopCurrentStatus();
         this.isPlaying = false;
         
-        const defaultActivity = `🎵 Ready for music!`;
+        const defaultActivity = `Run n!h for commands`;
         
         await this.client.user.setPresence({
             activities: [{
@@ -306,8 +306,22 @@ class StatusManager {
     }
 
 
-    async onTrackStart(guildId) {
-        await this.updateStatusAndVoice(guildId);
+    async onTrackStart(guildId, track = null, player = null) {
+        try {
+            // If track and player are provided directly, use them
+            if (track && track.info && player) {
+                const trackTitle = track.info.title || 'Unknown Track';
+                console.log(`🎵 Status update triggered for: ${trackTitle}`);
+                
+                await this.setPlayingStatus(trackTitle);
+                await this.setVoiceChannelStatus(guildId, trackTitle);
+            } else {
+                // Fallback to fetching player info
+                await this.updateStatusAndVoice(guildId);
+            }
+        } catch (error) {
+            console.error('❌ Error in onTrackStart:', error.message);
+        }
     }
 
  

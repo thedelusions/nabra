@@ -44,7 +44,7 @@ module.exports = {
 
             description += `**💬 Message Commands [${messageCommands.length}]:**\n`;
             messageCommands.forEach(cmd => {
-                description += `- \`!${cmd.name}\` - ${cmd.description}\n`;
+                description += `- \`n!${cmd.name}\` - ${cmd.description}\n`;
             });
 
             description += `\n**⚡ Slash Commands [${slashCommands.length}]:**\n`;
@@ -52,15 +52,29 @@ module.exports = {
                 description += `- \`/${cmd.name}\` - ${cmd.description}\n`;
             });
 
+            description += `\n**🎵 Supported Platforms:**\n`;
+            description += `• 🎬 YouTube •🎧 Spotify  •🔊 SoundCloud \n\n`;
+            description += `**🎮 Playback Control:**\n`;
+            description += `\`n!forward [seconds]\` - Fast forward (⏩ default: 10s)\n`;
+            description += `\`n!rewind [seconds]\` - Rewind (⏪ default: 10s)\n`;
+            description += `\`n!pause\` / \`n!resume\` - Pause/Resume playback\n`;
+            description += `\`n!skip\` - Skip current track\n\n`;
+            description += `**📝 Play Examples:**\n`;
+            description += `\`n!play song name\` - Search YouTube\n`;
+            description += `\`n!play scsearch:song\` - Search SoundCloud\n`;
+            description += `\`n!play https://soundcloud.com/...\` - SoundCloud URL\n`;
+            description += `\`n!play https://youtube.com/...\` - YouTube URL\n`;
+            description += `\`n!play https://spotify.com/...\` - Spotify URL\n`;
+
             if (description.length > 4096) {
                 description = description.slice(0, 4093) + '...';
             }
 
             const embed = new EmbedBuilder()
-                .setTitle('📖 Ultimate Music Bot - Command List')
+                .setTitle('📖 Nabra Music Bot - Command List')
                 .setColor(0x1DB954)
                 .setDescription(description)
-                .setFooter({ text: 'Developed by GlaceYT | https://glaceyt.com' })
+                .setFooter({ text: 'Developed by Bios | https://oureonbh.com' })
                 .setTimestamp();
 
             await message.reply({ embeds: [embed] });

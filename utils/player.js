@@ -4,6 +4,29 @@ class PlayerHandler {
     constructor(client) {
         this.client = client;
         this.centralEmbed = new CentralEmbedHandler(client);
+        this.disconnectTimeouts = new Map(); // Track disconnect timers
+        this.DISCONNECT_DELAY = 3 * 60 * 1000; // 3 minutes in milliseconds
+    }
+
+    /**
+     * Process query to determine if it's a URL or needs a search prefix
+     * Supports YouTube, Spotify, SoundCloud, and other platforms
+     */
+    processQuery(query) {
+        // If query already has a search prefix, return as-is
+        if (/^(ytsearch|ytmsearch|scsearch|spsearch|amsearch|dzsearch):/i.test(query)) {
+            return query;
+        }
+
+        // Check if it's a URL
+        const urlPattern = /^(https?:\/\/|www\.)/i;
+        if (urlPattern.test(query)) {
+            return query; // Return URLs as-is
+        }
+
+        // If not a URL and no prefix, add default search prefix
+        // You can change 'ytmsearch:' to 'ytsearch:' or 'scsearch:' if you prefer
+        return `ytmsearch:${query}`;
     }
 
     async createPlayer(guildId, voiceChannelId, textChannelId, options = {}) {
@@ -38,12 +61,19 @@ class PlayerHandler {
         try {
             if (!player) return { type: 'error', message: 'Player not available' };
 
+            // Smart query processing - detect if it's a URL or needs search prefix
+            const processedQuery = this.processQuery(query);
+            
+            console.log(`🔍 Resolving query: ${processedQuery.substring(0, 100)}...`);
+
             const resolve = await this.client.riffy.resolve({ 
-                query: query, 
+                query: processedQuery, 
                 requester: requester 
             });
 
             const { loadType, tracks, playlistInfo } = resolve;
+            
+            console.log(`📊 Load type: ${loadType}, Tracks found: ${tracks?.length || 0}`);
 
             if (loadType === 'playlist') {
                 for (const track of tracks) {
@@ -60,14 +90,19 @@ class PlayerHandler {
                 return {
                     type: 'playlist',
                     tracks: tracks.length,
-                    name: playlistInfo?.name || 'Unknown Playlist'
+                    name: playlistInfo?.name || 'Unknown Playlist',
+                    firstTrack: tracks[0] || null
                 };
 
             } else if (loadType === 'search' || loadType === 'track') {
                 const track = tracks[0];
                 if (!track || !track.info) {
+                    console.warn('⚠️ No valid track info found');
                     return { type: 'error', message: 'No results found' };
                 }
+
+                const source = track.info.sourceName || 'unknown';
+                console.log(`✅ Track loaded from ${source}: ${track.info.title}`);
 
                 track.info.requester = requester;
                 player.queue.add(track);
@@ -81,12 +116,20 @@ class PlayerHandler {
                     track: track
                 };
 
+            } else if (loadType === 'empty') {
+                console.warn('⚠️ Load type is empty - no results found');
+                return { type: 'error', message: 'No results found' };
+            } else if (loadType === 'error') {
+                console.error('❌ Lavalink returned error load type');
+                return { type: 'error', message: 'Failed to load track' };
             } else {
+                console.warn(`⚠️ Unknown load type: ${loadType}`);
                 return { type: 'error', message: 'No results found' };
             }
 
         } catch (error) {
             console.error('Play song error:', error.message);
+            console.error('Stack:', error.stack);
             return { type: 'error', message: 'Failed to play song' };
         }
     }
@@ -94,7 +137,7 @@ class PlayerHandler {
 
     async getThumbnailSafely(track) {
         try {
-        
+            // Handle promise-based thumbnails with timeout
             if (track.info.thumbnail instanceof Promise) {
                 const thumbnail = await Promise.race([
                     track.info.thumbnail,
@@ -103,21 +146,36 @@ class PlayerHandler {
                 return typeof thumbnail === 'string' ? thumbnail : null;
             }
             
-      
+            // Return existing string thumbnail
             if (typeof track.info.thumbnail === 'string' && track.info.thumbnail.trim() !== '') {
                 return track.info.thumbnail;
             }
             
-      
-            if (track.info.identifier && track.info.sourceName === 'youtube') {
+            // Generate thumbnail based on source
+            const source = track.info.sourceName?.toLowerCase();
+            
+            if (source === 'youtube' && track.info.identifier) {
                 return `https://img.youtube.com/vi/${track.info.identifier}/maxresdefault.jpg`;
+            }
+            
+            if (source === 'soundcloud' && track.info.artworkUrl) {
+                return track.info.artworkUrl;
+            }
+            
+            if (source === 'spotify' && track.info.artworkUrl) {
+                return track.info.artworkUrl;
             }
             
             return null;
         } catch (error) {
-          
-            if (track.info.identifier && track.info.sourceName === 'youtube') {
-                return `https://img.youtube.com/vi/${track.info.identifier}/maxresdefault.jpg`;
+            // Fallback: try to get thumbnail from track info
+            try {
+                if (track.info.artworkUrl) return track.info.artworkUrl;
+                if (track.info.identifier && track.info.sourceName === 'youtube') {
+                    return `https://img.youtube.com/vi/${track.info.identifier}/maxresdefault.jpg`;
+                }
+            } catch (fallbackError) {
+                console.error('Thumbnail fallback error:', fallbackError.message);
             }
             return null;
         }
@@ -159,8 +217,16 @@ class PlayerHandler {
                 const trackTitle = track?.info?.title || 'Unknown Track';
                 console.log(`🎵 Started playing: ${trackTitle} in ${player.guildId}`);
                 
+                // Clear disconnect timeout since a new track is playing
+                if (this.disconnectTimeouts.has(player.guildId)) {
+                    clearTimeout(this.disconnectTimeouts.get(player.guildId));
+                    this.disconnectTimeouts.delete(player.guildId);
+                    console.log(`✅ Cancelled disconnect timer for ${player.guildId}`);
+                }
+                
+                // Update status manager with track info
                 if (this.client.statusManager) {
-                    await this.client.statusManager.onTrackStart(player.guildId);
+                    await this.client.statusManager.onTrackStart(player.guildId, track, player);
                 }
                 
                 if (track && track.info) {
@@ -211,10 +277,35 @@ class PlayerHandler {
                 if (player.isAutoplay) {
                     player.autoplay(player);
                 } else {
-                    if (this.client.statusManager) {
-                        await this.client.statusManager.onPlayerDisconnect(player.guildId);
+                    // Set a 3-minute timeout before disconnecting
+                    console.log(`⏰ Bot will disconnect in 3 minutes if no new songs are added...`);
+                    
+                    // Clear any existing timeout for this guild
+                    if (this.disconnectTimeouts.has(player.guildId)) {
+                        clearTimeout(this.disconnectTimeouts.get(player.guildId));
                     }
-                    player.destroy();
+                    
+                    // Set new timeout
+                    const timeout = setTimeout(async () => {
+                        try {
+                            // Check if player still exists and queue is still empty
+                            const currentPlayer = this.client.riffy.players.get(player.guildId);
+                            if (currentPlayer && currentPlayer.queue.size === 0 && !currentPlayer.playing) {
+                                console.log(`👋 Disconnecting from ${player.guildId} after 3 minutes of inactivity`);
+                                
+                                if (this.client.statusManager) {
+                                    await this.client.statusManager.onPlayerDisconnect(player.guildId);
+                                }
+                                
+                                currentPlayer.destroy();
+                                this.disconnectTimeouts.delete(player.guildId);
+                            }
+                        } catch (error) {
+                            console.error('Disconnect timeout error:', error.message);
+                        }
+                    }, this.DISCONNECT_DELAY);
+                    
+                    this.disconnectTimeouts.set(player.guildId, timeout);
                 }
             } catch (error) {
                 console.error('Queue end error:', error.message);
@@ -245,6 +336,79 @@ class PlayerHandler {
                 await this.centralEmbed.updateCentralEmbed(player.guildId, null);
             } catch (error) {
                 console.error('Player disconnect error:', error.message);
+            }
+        });
+
+        // Critical: Handle track errors (especially for SoundCloud)
+        this.client.riffy.on('trackError', async (player, track, error) => {
+            try {
+                const trackTitle = track?.info?.title || 'Unknown Track';
+                const source = track?.info?.sourceName || 'Unknown';
+                const errorMsg = error.exception?.message || error.message || 'Unknown error';
+                
+                console.error(`❌ Track error [${source}]: ${trackTitle}`);
+                console.error(`   Error: ${errorMsg}`);
+                
+                // Notify user about the error
+                if (player.textChannel) {
+                    try {
+                        const { EmbedBuilder } = require('discord.js');
+                        const channel = await this.client.channels.fetch(player.textChannel);
+                        const embed = new EmbedBuilder()
+                            .setDescription(`⚠️ Failed to play: **${trackTitle}**\n` +
+                                          `Source: ${source}\n` +
+                                          `${player.queue.size > 0 ? '⏭️ Playing next track...' : ''}`)
+                            .setColor('#FFA500');
+                        await channel.send({ embeds: [embed] })
+                            .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
+                    } catch (notifyError) {
+                        console.error('Could not send error notification:', notifyError.message);
+                    }
+                }
+                
+                // Try to play next track instead of disconnecting
+                if (player.queue.size > 0) {
+                    console.log(`⏭️ Skipping failed track, playing next...`);
+                    setTimeout(() => player.play(), 500);
+                } else {
+                    console.log(`🛑 No more tracks in queue after error`);
+                }
+            } catch (err) {
+                console.error('Error handling track error:', err.message);
+            }
+        });
+
+        // Handle stuck tracks (timeout issues)
+        this.client.riffy.on('trackStuck', async (player, track, thresholdMs) => {
+            try {
+                const trackTitle = track?.info?.title || 'Unknown Track';
+                console.warn(`⚠️ Track stuck: ${trackTitle} (${thresholdMs}ms)`);
+                
+                // Skip stuck track and continue
+                if (player.queue.size > 0) {
+                    console.log(`⏭️ Skipping stuck track, playing next...`);
+                    await player.play();
+                } else {
+                    console.log(`🛑 No more tracks in queue after stuck track`);
+                }
+            } catch (error) {
+                console.error('Error handling stuck track:', error.message);
+            }
+        });
+
+        // Handle WebSocket errors
+        this.client.riffy.on('playerException', async (player, track, exception) => {
+            try {
+                const trackTitle = track?.info?.title || 'Unknown Track';
+                console.error(`💥 Player exception: ${trackTitle} - ${exception.message}`);
+                
+                // Try to continue with next track
+                if (player.queue.size > 0) {
+                    console.log(`⏭️ Skipping failed track, playing next...`);
+                    await player.play();
+                }
+            } catch (error) {
+                console.error('Error handling player exception:', error.message);
             }
         });
 

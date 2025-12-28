@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const shiva = require('../../shiva');
+const MusicFormatters = require('../../utils/formatters');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
@@ -35,37 +36,24 @@ module.exports = {
             );
 
             if (!conditions.hasActivePlayer || !conditions.currentTrack) {
-                const embed = new EmbedBuilder().setDescription('❌ No music is currently playing!');
+                const embed = MusicFormatters.createErrorEmbed('No music is currently playing!');
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             const track = conditions.currentTrack;
             const player = conditions.player;
             
-            const duration = formatDuration(track.info.length);
-            const position = formatDuration(player.position);
-            const statusEmoji = player.paused ? '⏸️' : '▶️';
-            const loopEmoji = getLoopEmoji(player.loop);
-
-            const embed = new EmbedBuilder().setDescription(
-                `${statusEmoji} **${track.info.title}**\n` +
-                `By: ${track.info.author}\n` +
-                `⏰ ${position} / ${duration}\n` +
-                `👤 <@${track.info.requester.id}>\n` +
-                `🔊 Volume: ${player.volume || 50}%\n` +
-                `🔁 Loop: ${loopEmoji} ${player.loop || 'Off'}\n` +
-                `📜 Queue: ${player.queue.size} songs`
-            );
+            const embed = MusicFormatters.createNowPlayingEmbed(track, player);
 
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 15000));
 
         } catch (error) {
             console.error('Now playing command error:', error);
-            const embed = new EmbedBuilder().setDescription('❌ An error occurred while fetching current song!');
+            const embed = MusicFormatters.createErrorEmbed('An error occurred while fetching current song!');
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
         }
     }
 };

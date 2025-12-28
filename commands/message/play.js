@@ -27,12 +27,13 @@ module.exports = {
         const ConditionChecker = require('../../utils/checks');
         const PlayerHandler = require('../../utils/player');
         const ErrorHandler = require('../../utils/errorHandler');
+        const MusicFormatters = require('../../utils/formatters');
         
         const query = args.join(' ');
         if (!query) {
-            const embed = new EmbedBuilder().setDescription('❌ Please provide a song to play!');
+            const embed = MusicFormatters.createErrorEmbed('Please provide a song to play!');
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
         }
 
         try {
@@ -46,9 +47,9 @@ module.exports = {
 
             const errorMsg = checker.getErrorMessage(conditions, 'play');
             if (errorMsg) {
-                const embed = new EmbedBuilder().setDescription(errorMsg);
+                const embed = MusicFormatters.createErrorEmbed(errorMsg);
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
             let targetVC = message.member.voice.channelId;
@@ -66,24 +67,30 @@ module.exports = {
             const result = await playerHandler.playSong(player, query, message.author);
 
             if (result.type === 'track') {
-                const embed = new EmbedBuilder().setDescription(`✅ Added to queue: **${result.track.info.title}**`);
+                const isPlaying = !player.playing && player.queue.size === 0;
+                const embed = MusicFormatters.createTrackAddedEmbed(result.track, player, isPlaying);
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 10000));
             } else if (result.type === 'playlist') {
-                const embed = new EmbedBuilder().setDescription(`✅ Added **${result.tracks}** songs from playlist: **${result.name}**`);
+                const embed = MusicFormatters.createPlaylistAddedEmbed(
+                    { name: result.name },
+                    result.tracks,
+                    message.author,
+                    result.firstTrack
+                );
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 10000));
             } else {
-                const embed = new EmbedBuilder().setDescription('❌ No results found for your query!');
+                const embed = MusicFormatters.createErrorEmbed('No results found for your query!');
                 return message.reply({ embeds: [embed] })
-                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             }
 
         } catch (error) {
-            const embed = new EmbedBuilder().setDescription('❌ An error occurred while trying to play music!');
+            const embed = MusicFormatters.createErrorEmbed('An error occurred while trying to play music!');
             console.error('Play command error:', error);
             return message.reply({ embeds: [embed] })
-                .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
         }
     }
 };
