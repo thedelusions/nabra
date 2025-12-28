@@ -35,7 +35,7 @@ module.exports = {
                     `• **Uptime:** ${hours}h ${minutes}m ${seconds}s`
                 )
                 .setTimestamp()
-                .setFooter({ text: 'Nabra Music Bot • Developed by Bios' });
+                .setFooter({ text: 'Nabra Music Bot • Developed by 𝖇𝖎𝖔𝖘' });
 
             await message.reply({ embeds: [embed] });
         } catch (error) {

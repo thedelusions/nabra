@@ -23,60 +23,72 @@ module.exports = {
         message.securityToken = COMMAND_SECURITY_TOKEN;
 
         try {
-            const msgCommandsPath = path.join(__dirname, '..', 'message');
-            const msgFiles = fs.readdirSync(msgCommandsPath).filter(file => file.endsWith('.js'));
-            const messageCommands = msgFiles.map(file => {
-                const cmd = require(path.join(msgCommandsPath, file));
-                return { name: cmd.name || 'Unknown', description: cmd.description || 'No description' };
-            });
-
-            const slashCommandsPath = path.join(__dirname, '..', 'slash');
-            const slashFiles = fs.readdirSync(slashCommandsPath).filter(file => file.endsWith('.js'));
-            const slashCommands = slashFiles.map(file => {
-                const cmd = require(path.join(slashCommandsPath, file));
-                return {
-                    name: cmd.data?.name || 'Unknown',
-                    description: cmd.data?.description || 'No description'
-                };
-            });
-
-            let description = `**🌐 Bot Stats:** Serving in **${client.guilds.cache.size}** servers.\n\n`;
-
-            description += `**💬 Message Commands [${messageCommands.length}]:**\n`;
-            messageCommands.forEach(cmd => {
-                description += `- \`n!${cmd.name}\` - ${cmd.description}\n`;
-            });
-
-            description += `\n**⚡ Slash Commands [${slashCommands.length}]:**\n`;
-            slashCommands.forEach(cmd => {
-                description += `- \`/${cmd.name}\` - ${cmd.description}\n`;
-            });
-
-            description += `\n**🎵 Supported Platforms:**\n`;
-            description += `• 🎬 YouTube •🎧 Spotify  •🔊 SoundCloud \n\n`;
-            description += `**🎮 Playback Control:**\n`;
-            description += `\`n!forward [seconds]\` - Fast forward (⏩ default: 10s)\n`;
-            description += `\`n!rewind [seconds]\` - Rewind (⏪ default: 10s)\n`;
-            description += `\`n!pause\` / \`n!resume\` - Pause/Resume playback\n`;
-            description += `\`n!skip\` - Skip current track\n`;
-            description += `\`n!jump <number>\` - Jump to specific track\n\n`;
-            description += `**🔄 Queue Management:**\n`;
-            description += `\`n!loop <mode>\` - Loop off/track/queue\n`;
-            description += `\`n!move <from> <to>\` - Rearrange queue\n`;
-            description += `\`n!clear [from]\` - Clear queue (optionally from position)\n`;
-            description += `\`n!shuffle\` - Shuffle queue\n\n`;
-            description += `**⚙️ Settings:**\n`;
-            description += `\`n!24/7\` - Toggle 24/7 mode (Admin only)\n\n`;
-
-            if (description.length > 4096) {
-                description = description.slice(0, 4093) + '...';
-            }
-
+            const prefix = process.env.PREFIX || 'n!';
+            const embedColor = process.env.EMBED_COLOR || '#2F3767';
+            
+            // Create the main help embed with better categorization
             const embed = new EmbedBuilder()
-                .setTitle('📖 Nabra Music Bot - Command List')
-                .setColor(0x1DB954)
-                .setDescription(description)
-                .setFooter({ text: 'Developed by Bios | https://oureonbh.com' })
+                .setTitle('🎵 Nabra Music Bot - Command Guide')
+                .setColor(embedColor)
+                .setDescription(`**Welcome to Nabra Music Bot!**\nPrefix: \`${prefix}\` | Slash Commands: \`/\`\nServing in **${client.guilds.cache.size}** servers 🌐`)
+                .addFields(
+                    {
+                        name: '🎧 Essential Commands',
+                        value: 
+                            `\`${prefix}play <song/url>\` or \`/play\` - Play music\n` +
+                            `\`${prefix}pause\` or \`/pause\` - Pause playback\n` +
+                            `\`${prefix}resume\` or \`/resume\` - Resume playback\n` +
+                            `\`${prefix}skip\` or \`/skip\` - Skip current song\n` +
+                            `\`${prefix}stop\` or \`/stop\` - Stop and clear queue\n` +
+                            `\`${prefix}join\` or \`/join\` - Join your voice channel`,
+                        inline: false
+                    },
+                    {
+                        name: '📋 Queue Management',
+                        value: 
+                            `\`${prefix}queue\` or \`/queue\` - View song queue\n` +
+                            `\`${prefix}nowplaying\` - Show current song\n` +
+                            `\`${prefix}loop [mode]\` or \`/loop\` - Toggle loop (off/track/queue)\n` +
+                            `\`${prefix}shuffle\` or \`/shuffle\` - Shuffle queue\n` +
+                            `\`${prefix}clear [from]\` or \`/clear\` - Clear queue\n` +
+                            `\`${prefix}remove <position>\` or \`/remove\` - Remove song\n` +
+                            `\`${prefix}move <from> <to>\` or \`/move\` - Move songs`,
+                        inline: false
+                    },
+                    {
+                        name: '⏯️ Playback Control',
+                        value: 
+                            `\`${prefix}forward [sec]\` or \`/forward\` - Fast forward ⏩\n` +
+                            `\`${prefix}rewind [sec]\` or \`/rewind\` - Rewind ⏪\n` +
+                            `\`${prefix}jump <position>\` or \`/jump\` - Jump to track\n` +
+                            `\`${prefix}volume [1-100]\` or \`/volume\` - Adjust volume\n` +
+                            `\`/autoplay\` - Toggle autoplay mode`,
+                        inline: false
+                    },
+                    {
+                        name: '⚙️ Settings & Admin',
+                        value: 
+                            `\`${prefix}247\` or \`/24-7\` - Toggle 24/7 mode (Admin)\n` +
+                            `\`/setup-central\` - Set up control center\n` +
+                            `\`/disable-central\` - Disable control center\n` +
+                            `\`/clean-up\` - Clean up bot messages`,
+                        inline: false
+                    },
+                    {
+                        name: '📡 Supported Platforms',
+                        value: '🎬 YouTube • 🎧 Spotify • 🔊 SoundCloud',
+                        inline: false
+                    },
+                    {
+                        name: '💡 Need Help?',
+                        value: 
+                            `• Use \`${prefix}support\` for support server link\n` +
+                            `• Visit: https://oureonbh.com\n` +
+                            `• Discord: https://discord.gg/qKKBqNSD65`,
+                        inline: false
+                    }
+                )
+                .setFooter({ text: 'Developed by 𝖇𝖎𝖔𝖘 • Tip: Most commands work with both prefix and slash!' })
                 .setTimestamp();
 
             await message.reply({ embeds: [embed] });

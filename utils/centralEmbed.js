@@ -69,7 +69,7 @@ class CentralEmbedHandler {
                 )
                 .setImage('https://i.ibb.co/DDSdKy31/ezgif-8aec7517f2146d.gif')
                 .setFooter({ 
-                    text: 'Nabra Music Bot • Developed By Bios!',
+                    text: 'Nabra Music Bot • Developed By 𝖇𝖎𝖔𝖘!',
                     iconURL: this.client.user.displayAvatarURL()
                 })
                 .setTimestamp();
@@ -194,7 +194,7 @@ class CentralEmbedHandler {
                     ].join('\n'))
                     .setColor(embedColor)
                     .setFooter({ 
-                        text: `Nabra Music Bot • ${statusText} • Developed By Bios`,
+                        text: `Nabra Music Bot • ${statusText} • Developed By 𝖇𝖎𝖔𝖘`,
                         iconURL: this.client.user.displayAvatarURL()
                     })
                     .setTimestamp();
@@ -257,7 +257,7 @@ class CentralEmbedHandler {
                 )
                 .setImage('https://i.ibb.co/DDSdKy31/ezgif-8aec7517f2146d.gif')
                 .setFooter({ 
-                    text: 'Nabra Music Bot • Developed By Bios!',
+                    text: 'Nabra Music Bot • Developed By 𝖇𝖎𝖔𝖘',
                     iconURL: this.client.user.displayAvatarURL()
                 })
                 .setTimestamp();
