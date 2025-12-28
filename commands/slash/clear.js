@@ -6,7 +6,13 @@ const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('clear')
-        .setDescription('Clear all songs from queue'),
+        .setDescription('Clear all songs from queue or from a specific position')
+        .addIntegerOption(option =>
+            option.setName('from')
+                .setDescription('Clear from this position onwards (optional)')
+                .setRequired(false)
+                .setMinValue(1)
+        ),
     securityToken: COMMAND_SECURITY_TOKEN,
 
     async execute(interaction, client) {
@@ -39,6 +45,33 @@ module.exports = {
             }
 
             const player = conditions.player;
+            const fromPosition = interaction.options.getInteger('from');
+            
+            // If a position is provided, clear from that position onwards
+            if (fromPosition) {
+                const queueSize = player.queue.size;
+                
+                if (fromPosition > queueSize) {
+                    const embed = new EmbedBuilder().setDescription(`❌ Invalid position! Queue has only **${queueSize}** tracks.`);
+                    return interaction.editReply({ embeds: [embed] })
+                        .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                }
+                
+                // Get all tracks and keep only the ones before the position
+                const tracks = [...player.queue];
+                const keepTracks = tracks.slice(0, fromPosition - 1);
+                const clearedCount = tracks.length - keepTracks.length;
+                
+                // Rebuild queue with kept tracks
+                player.queue.clear();
+                keepTracks.forEach(track => player.queue.add(track));
+                
+                const embed = new EmbedBuilder().setDescription(`🗑️ Cleared **${clearedCount}** tracks from position **#${fromPosition}** onwards!`);
+                return interaction.editReply({ embeds: [embed] })
+                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+            }
+            
+            // Otherwise clear the entire queue
             const clearedCount = player.queue.size;
             player.queue.clear();
 

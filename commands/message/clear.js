@@ -7,7 +7,7 @@ const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 module.exports = {
     name: 'clear',
     aliases: ['empty', 'clean', 'clearqueue'],
-    description: 'Clear all songs from queue',
+    description: 'Clear all songs from queue or from a specific position',
     securityToken: COMMAND_SECURITY_TOKEN,
 
     async execute(message, args, client) {
@@ -48,6 +48,33 @@ module.exports = {
             }
 
             const player = conditions.player;
+            const fromPosition = parseInt(args[0]);
+            
+            // If a position is provided, clear from that position onwards
+            if (fromPosition && !isNaN(fromPosition) && fromPosition > 0) {
+                const queueSize = player.queue.size;
+                
+                if (fromPosition > queueSize) {
+                    const embed = new EmbedBuilder().setDescription(`❌ Invalid position! Queue has only **${queueSize}** tracks.`);
+                    return message.reply({ embeds: [embed] })
+                        .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+                }
+                
+                // Get all tracks and keep only the ones before the position
+                const tracks = [...player.queue];
+                const keepTracks = tracks.slice(0, fromPosition - 1);
+                const clearedCount = tracks.length - keepTracks.length;
+                
+                // Rebuild queue with kept tracks
+                player.queue.clear();
+                keepTracks.forEach(track => player.queue.add(track));
+                
+                const embed = new EmbedBuilder().setDescription(`🗑️ Cleared **${clearedCount}** tracks from position **#${fromPosition}** onwards!`);
+                return message.reply({ embeds: [embed] })
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+            }
+            
+            // Otherwise clear the entire queue
             const clearedCount = player.queue.size;
             player.queue.clear();
 

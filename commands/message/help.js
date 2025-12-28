@@ -58,13 +58,15 @@ module.exports = {
             description += `\`n!forward [seconds]\` - Fast forward (⏩ default: 10s)\n`;
             description += `\`n!rewind [seconds]\` - Rewind (⏪ default: 10s)\n`;
             description += `\`n!pause\` / \`n!resume\` - Pause/Resume playback\n`;
-            description += `\`n!skip\` - Skip current track\n\n`;
-            description += `**📝 Play Examples:**\n`;
-            description += `\`n!play song name\` - Search YouTube\n`;
-            description += `\`n!play scsearch:song\` - Search SoundCloud\n`;
-            description += `\`n!play https://soundcloud.com/...\` - SoundCloud URL\n`;
-            description += `\`n!play https://youtube.com/...\` - YouTube URL\n`;
-            description += `\`n!play https://spotify.com/...\` - Spotify URL\n`;
+            description += `\`n!skip\` - Skip current track\n`;
+            description += `\`n!jump <number>\` - Jump to specific track\n\n`;
+            description += `**🔄 Queue Management:**\n`;
+            description += `\`n!loop <mode>\` - Loop off/track/queue\n`;
+            description += `\`n!move <from> <to>\` - Rearrange queue\n`;
+            description += `\`n!clear [from]\` - Clear queue (optionally from position)\n`;
+            description += `\`n!shuffle\` - Shuffle queue\n\n`;
+            description += `**⚙️ Settings:**\n`;
+            description += `\`n!24/7\` - Toggle 24/7 mode (Admin only)\n\n`;
 
             if (description.length > 4096) {
                 description = description.slice(0, 4093) + '...';

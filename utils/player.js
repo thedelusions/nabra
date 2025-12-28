@@ -270,6 +270,12 @@ class PlayerHandler {
         
                 const serverConfig = await require('../models/Server').findById(player.guildId);
         
+                // Check if 24/7 mode is enabled
+                if (serverConfig?.settings?.alwaysOn) {
+                    console.log(`🔛 24/7 mode enabled - staying in voice channel`);
+                    return; // Don't disconnect, stay in voice channel
+                }
+        
                 if (serverConfig?.settings?.autoplay) {
                     player.isAutoplay = true;
                 }
@@ -291,6 +297,14 @@ class PlayerHandler {
                             // Check if player still exists and queue is still empty
                             const currentPlayer = this.client.riffy.players.get(player.guildId);
                             if (currentPlayer && currentPlayer.queue.size === 0 && !currentPlayer.playing) {
+                                // Double-check 24/7 mode hasn't been enabled during the timeout
+                                const currentConfig = await require('../models/Server').findById(player.guildId);
+                                if (currentConfig?.settings?.alwaysOn) {
+                                    console.log(`🔛 24/7 mode was enabled - cancelling disconnect`);
+                                    this.disconnectTimeouts.delete(player.guildId);
+                                    return;
+                                }
+                                
                                 console.log(`👋 Disconnecting from ${player.guildId} after 3 minutes of inactivity`);
                                 
                                 if (this.client.statusManager) {

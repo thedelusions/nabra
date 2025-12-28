@@ -25,7 +25,8 @@ const serverSchema = new mongoose.Schema({
         prefix: String,
         autoplay: Boolean,
         defaultVolume: Number,
-        djRole: String
+        djRole: String,
+        alwaysOn: Boolean // 24/7 mode - never disconnect
     }
 });
 
