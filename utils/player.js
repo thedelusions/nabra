@@ -248,6 +248,15 @@ class PlayerHandler {
                     if (this.statsService) {
                         await this.statsService.startSession(player, track);
                     }
+
+                    // Oureon analytics tracking
+                    if (this.client.oureon) {
+                        this.client.oureon.trackPlayed(
+                            player.guildId,
+                            track.info.requester?.id,
+                            track.info
+                        );
+                    }
                 }
             } catch (error) {
                 console.error('Track start error:', error.message);
