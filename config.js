@@ -30,9 +30,9 @@ class EnterpriseConfigurationManager {
              * Configure your Lavalink server for audio processing
              */
             lavalink: {
-                host: EnvironmentVariableProcessor.LAVALINK_HOST || "lava-v3.ajieblogs.eu.org", 
+                host: EnvironmentVariableProcessor.LAVALINK_HOST || "lavalink.devamop.in", 
                 port: EnvironmentVariableProcessor.LAVALINK_PORT || 443,       
-                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "https://dsc.gg/ajidevserver", 
+                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "DevamOP", 
                 secure: EnvironmentVariableProcessor.LAVALINK_SECURE === 'true' || false
             },           
             /**
