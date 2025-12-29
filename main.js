@@ -20,7 +20,7 @@ const ApplicationStatusManagementService = require('./utils/statusManager');
 const StatsService = require('./utils/statsService');
 const MemoryGarbageCollectionOptimizer = require('./utils/garbageCollector');
 const EnvironmentVariableConfigurationLoader = require('dotenv');
-//const OureonClient = require('./utils/oureonClient');
+const OureonClient = require('./utils/oureonClient');
 const shiva = require('./shiva');
 // Initialize environment variable configuration subsystem
 EnvironmentVariableConfigurationLoader.config();
@@ -74,7 +74,7 @@ class DiscordClientRuntimeManager {
         this.clientRuntimeInstance.statsService = this.statsSubsystem;
 
         // Oureon analytics integration
-        // this.clientRuntimeInstance.oureon = new OureonClient();
+        this.clientRuntimeInstance.oureon = new OureonClient();
         
         // Dependency injection pattern for audio player management subsystem  
         this.audioPlayerManagementSubsystem = new AudioPlayerManagementHandler(this.clientRuntimeInstance);
