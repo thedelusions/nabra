@@ -4,6 +4,7 @@ class PlayerHandler {
     constructor(client) {
         this.client = client;
         this.centralEmbed = new CentralEmbedHandler(client);
+        this.statsService = client.statsService;
         this.disconnectTimeouts = new Map(); // Track disconnect timers
         this.DISCONNECT_DELAY = 3 * 60 * 1000; // 3 minutes in milliseconds
     }
@@ -243,6 +244,10 @@ class PlayerHandler {
                         loop: player.loop || 'none',
                         queueLength: player.queue.size || 0
                     });
+
+                    if (this.statsService) {
+                        await this.statsService.startSession(player, track);
+                    }
                 }
             } catch (error) {
                 console.error('Track start error:', error.message);
@@ -253,6 +258,10 @@ class PlayerHandler {
             try {
                 const trackTitle = track?.info?.title || 'Unknown Track';
                 console.log(`🎵 Finished playing: ${trackTitle} in ${player.guildId}`);
+
+                if (this.statsService) {
+                    await this.statsService.endSession(player, track);
+                }
                 
                 if (this.client.statusManager) {
                     await this.client.statusManager.onTrackEnd(player.guildId);

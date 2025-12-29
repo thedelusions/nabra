@@ -17,6 +17,7 @@ const SystemConfigurationManager = require('./config');
 const DatabaseConnectionEstablishmentService = require('./database/connection');
 const AudioPlayerManagementHandler = require('./utils/player');
 const ApplicationStatusManagementService = require('./utils/statusManager');
+const StatsService = require('./utils/statsService');
 const MemoryGarbageCollectionOptimizer = require('./utils/garbageCollector');
 const EnvironmentVariableConfigurationLoader = require('dotenv');
 const shiva = require('./shiva');
@@ -66,6 +67,10 @@ class DiscordClientRuntimeManager {
         // Dependency injection pattern for status management subsystem
         this.statusManagementSubsystem = new ApplicationStatusManagementService(this.clientRuntimeInstance);
         this.clientRuntimeInstance.statusManager = this.statusManagementSubsystem;
+
+        // Analytics and statistics subsystem
+        this.statsSubsystem = new StatsService();
+        this.clientRuntimeInstance.statsService = this.statsSubsystem;
         
         // Dependency injection pattern for audio player management subsystem  
         this.audioPlayerManagementSubsystem = new AudioPlayerManagementHandler(this.clientRuntimeInstance);
