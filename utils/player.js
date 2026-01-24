@@ -3,7 +3,8 @@ const CentralEmbedHandler = require('./centralEmbed');
 class PlayerHandler {
     constructor(client) {
         this.client = client;
-        this.centralEmbed = new CentralEmbedHandler(client);
+        // Use singleton pattern for multi-server support
+        this.centralEmbed = CentralEmbedHandler.getInstance(client);
         this.statsService = client.statsService;
         this.disconnectTimeouts = new Map(); // Track disconnect timers
         this.DISCONNECT_DELAY = 3 * 60 * 1000; // 3 minutes in milliseconds

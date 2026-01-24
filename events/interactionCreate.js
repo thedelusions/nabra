@@ -133,7 +133,8 @@ async function handleSecureMusicButton(interaction, client) {
         const player = conditions.player;
         const action = interaction.customId.replace('music_', '');
         const CentralEmbedHandler = require('../utils/centralEmbed');
-        const centralHandler = new CentralEmbedHandler(client);
+        // Use singleton pattern for multi-server support
+        const centralHandler = CentralEmbedHandler.getInstance(client);
         
         switch (action) {
             case 'pause':

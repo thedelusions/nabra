@@ -124,7 +124,8 @@ class ClientInitializationManager {
      */
     async initializeEmbedManagementSubsystem() {
         try {
-            const centralEmbedManager = new CentralEmbedManagementSystem(this.clientRuntimeInstance);
+            // Use singleton pattern for multi-server support
+            const centralEmbedManager = CentralEmbedManagementSystem.getInstance(this.clientRuntimeInstance);
             await centralEmbedManager.resetAllCentralEmbedsOnStartup();
             this.initializationStatus.embedSystemReady = true;
             

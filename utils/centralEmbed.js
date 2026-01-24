@@ -2,9 +2,30 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const config = require('../config');
 const Server = require('../models/Server');
 
+// Singleton instance for multi-server support
+let instance = null;
+
 class CentralEmbedHandler {
     constructor(client) {
+        // Implement singleton pattern - return existing instance if available
+        if (instance && instance.client === client) {
+            return instance;
+        }
+        
         this.client = client;
+        instance = this;
+    }
+    
+    /**
+     * Get or create the singleton instance
+     * @param {Client} client - Discord client
+     * @returns {CentralEmbedHandler} The singleton instance
+     */
+    static getInstance(client) {
+        if (!instance || instance.client !== client) {
+            instance = new CentralEmbedHandler(client);
+        }
+        return instance;
     }
 
 

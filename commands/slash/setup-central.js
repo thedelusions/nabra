@@ -59,7 +59,8 @@ module.exports = {
                 });
             }
 
-            const centralHandler = new CentralEmbedHandler(client);
+            // Use singleton pattern for multi-server support
+            const centralHandler = CentralEmbedHandler.getInstance(client);
             const embedMessage = await centralHandler.createCentralEmbed(channelId, guildId);
             
             if (!embedMessage) {
