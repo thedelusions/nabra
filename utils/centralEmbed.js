@@ -7,23 +7,19 @@ let instance = null;
 
 class CentralEmbedHandler {
     constructor(client) {
-        // Implement singleton pattern - return existing instance if available
-        if (instance && instance.client === client) {
-            return instance;
-        }
-        
         this.client = client;
-        instance = this;
     }
     
     /**
      * Get or create the singleton instance
+     * This is the ONLY way to get the CentralEmbedHandler - always use getInstance()
      * @param {Client} client - Discord client
      * @returns {CentralEmbedHandler} The singleton instance
      */
     static getInstance(client) {
-        if (!instance || instance.client !== client) {
+        if (!instance) {
             instance = new CentralEmbedHandler(client);
+            console.log('✅ CentralEmbedHandler singleton created');
         }
         return instance;
     }
@@ -181,11 +177,36 @@ class CentralEmbedHandler {
 
     async updateCentralEmbed(guildId, trackInfo = null) {
         try {
+            console.log(`🔄 updateCentralEmbed called for guild ${guildId}, trackInfo: ${trackInfo ? 'present' : 'null'}`);
+            
             const serverConfig = await Server.findById(guildId);
-            if (!serverConfig?.centralSetup?.embedId) return;
+            
+            // Check if central setup is enabled and has required data
+            if (!serverConfig?.centralSetup?.enabled) {
+                console.log(`⚠️ Central setup not enabled for guild ${guildId}`);
+                return; // Central not enabled for this guild
+            }
+            
+            if (!serverConfig.centralSetup.embedId || !serverConfig.centralSetup.channelId) {
+                console.log(`⚠️ Central embed missing embedId or channelId for guild ${guildId}`);
+                return;
+            }
 
-            const channel = await this.client.channels.fetch(serverConfig.centralSetup.channelId);
-            const message = await channel.messages.fetch(serverConfig.centralSetup.embedId);
+            const channel = await this.client.channels.fetch(serverConfig.centralSetup.channelId).catch(() => null);
+            if (!channel) {
+                console.log(`⚠️ Could not fetch central channel for guild ${guildId}`);
+                return;
+            }
+            
+            const message = await channel.messages.fetch(serverConfig.centralSetup.embedId).catch(() => null);
+            if (!message) {
+                console.log(`⚠️ Could not fetch central embed message for guild ${guildId}, recreating...`);
+                // Try to recreate the embed
+                const newMessage = await this.createCentralEmbed(serverConfig.centralSetup.channelId, guildId);
+                if (!newMessage) return;
+                // Continue with the new message for update
+                return this.updateCentralEmbed(guildId, trackInfo);
+            }
             
             let embed, components = [];
             

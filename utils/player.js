@@ -234,6 +234,7 @@ class PlayerHandler {
                 if (track && track.info) {
                     const thumbnail = await this.getThumbnailSafely(track);
                     
+                    console.log(`🎯 Calling updateCentralEmbed for guild ${player.guildId}`);
                     await this.centralEmbed.updateCentralEmbed(player.guildId, {
                         title: track.info.title || 'Unknown Title',
                         author: track.info.author || 'Unknown Artist',
