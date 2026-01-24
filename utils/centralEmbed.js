@@ -8,6 +8,9 @@ let instance = null;
 class CentralEmbedHandler {
     constructor(client) {
         this.client = client;
+        // Cache for server configs to reduce database queries
+        this.configCache = new Map();
+        this.CACHE_TTL = 60000; // 1 minute cache
     }
     
     /**
@@ -22,6 +25,29 @@ class CentralEmbedHandler {
             console.log('✅ CentralEmbedHandler singleton created');
         }
         return instance;
+    }
+    
+    /**
+     * Get server config with caching to reduce DB queries
+     */
+    async getServerConfig(guildId, forceRefresh = false) {
+        const cached = this.configCache.get(guildId);
+        const now = Date.now();
+        
+        if (!forceRefresh && cached && (now - cached.timestamp) < this.CACHE_TTL) {
+            return cached.config;
+        }
+        
+        const config = await Server.findById(guildId);
+        this.configCache.set(guildId, { config, timestamp: now });
+        return config;
+    }
+    
+    /**
+     * Invalidate cache for a guild (call after updates)
+     */
+    invalidateCache(guildId) {
+        this.configCache.delete(guildId);
     }
 
 
@@ -193,13 +219,11 @@ class CentralEmbedHandler {
 
     async updateCentralEmbed(guildId, trackInfo = null) {
         try {
-            console.log(`🔄 updateCentralEmbed called for guild ${guildId}, trackInfo: ${trackInfo ? 'present' : 'null'}`);
-            
-            const serverConfig = await Server.findById(guildId);
+            // Use cached config to reduce database queries
+            const serverConfig = await this.getServerConfig(guildId);
             
             // Check if central setup is enabled and has required data
             if (!serverConfig?.centralSetup?.enabled) {
-                console.log(`⚠️ Central setup not enabled for guild ${guildId}`);
                 return; // Central not enabled for this guild
             }
             
