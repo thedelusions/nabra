@@ -94,9 +94,10 @@ class CentralEmbedHandler {
             const message = await channel.send({ embeds: [embed] });
             
             await Server.findByIdAndUpdate(guildId, {
+                'centralSetup.enabled': true,
                 'centralSetup.embedId': message.id,
                 'centralSetup.channelId': channelId
-            });
+            }, { upsert: true });
 
             console.log(`✅ Central embed created in ${guildId}`);
             return message;
