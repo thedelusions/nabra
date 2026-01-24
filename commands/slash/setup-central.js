@@ -82,10 +82,20 @@ module.exports = {
                 }
             };
 
-            await Server.findByIdAndUpdate(guildId, setupData, { 
-                upsert: true, 
-                new: true 
-            });
+            // Handle potential duplicate key errors from stale guildId index
+            try {
+                await Server.findByIdAndUpdate(guildId, setupData, { 
+                    upsert: true, 
+                    new: true 
+                });
+            } catch (dbError) {
+                if (dbError.code === 11000) {
+                    // Duplicate key - try update without upsert
+                    await Server.findByIdAndUpdate(guildId, setupData);
+                } else {
+                    throw dbError;
+                }
+            }
 
             const successEmbed = new EmbedBuilder()
                 .setTitle('✅ Central Music System Setup Complete!')
