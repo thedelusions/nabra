@@ -93,11 +93,26 @@ class CentralEmbedHandler {
 
             const message = await channel.send({ embeds: [embed] });
             
-            await Server.findByIdAndUpdate(guildId, {
-                'centralSetup.enabled': true,
-                'centralSetup.embedId': message.id,
-                'centralSetup.channelId': channelId
-            }, { upsert: true });
+            // Update or create server config - handle potential duplicate key errors
+            try {
+                await Server.findByIdAndUpdate(guildId, {
+                    _id: guildId,
+                    'centralSetup.enabled': true,
+                    'centralSetup.embedId': message.id,
+                    'centralSetup.channelId': channelId
+                }, { upsert: true, setDefaultsOnInsert: true });
+            } catch (dbError) {
+                // If duplicate key error, try without upsert (document exists)
+                if (dbError.code === 11000) {
+                    await Server.findByIdAndUpdate(guildId, {
+                        'centralSetup.enabled': true,
+                        'centralSetup.embedId': message.id,
+                        'centralSetup.channelId': channelId
+                    });
+                } else {
+                    throw dbError;
+                }
+            }
 
             console.log(`✅ Central embed created in ${guildId}`);
             return message;
