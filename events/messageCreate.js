@@ -1265,7 +1265,7 @@ function safeDeleteMessage(messageObject) {
 
 async function isSongQuery(contentString) {
     const minimumContentLength = 2;
-    const maximumContentLength = 200;
+    const maximumContentLength = 500; // Increased for longer URLs
     const contentLengthValidator = contentString.length >= minimumContentLength && contentString.length <= maximumContentLength;
 
     if (!contentLengthValidator) return false;
@@ -1275,11 +1275,30 @@ async function isSongQuery(contentString) {
 
     if (containsRestrictedContent) return false;
 
-    const validSongPatterns = [/^[^\/\*\?\|\<\>]+$/, /https?:\/\/(www\.)?(youtube|youtu\.be|spotify)/i];
-    const matchesValidPattern = validSongPatterns.some(songPattern => songPattern.test(contentString));
-    const meetsMinimumLength = contentString.length > minimumContentLength;
+    // Check if it's a supported music URL - these get priority and instant play
+    const supportedUrlPatterns = [
+        /https?:\/\/(www\.)?(youtube\.com|youtu\.be)/i,           // YouTube
+        /https?:\/\/(www\.)?(music\.youtube\.com)/i,               // YouTube Music
+        /https?:\/\/(www\.)?(open\.spotify\.com|spotify\.com)/i,   // Spotify
+        /https?:\/\/(www\.)?(soundcloud\.com)/i,                   // SoundCloud
+        /https?:\/\/(www\.)?(deezer\.com)/i,                       // Deezer
+        /https?:\/\/(www\.)?(music\.apple\.com)/i,                 // Apple Music
+        /https?:\/\/(www\.)?(tidal\.com)/i,                        // Tidal
+        /https?:\/\/(www\.)?(bandcamp\.com)/i,                     // Bandcamp
+    ];
+    
+    const isUrl = supportedUrlPatterns.some(pattern => pattern.test(contentString));
+    if (isUrl) return true;
 
-    return matchesValidPattern && meetsMinimumLength;
+    // For search queries, validate it's not a random URL or command-like input
+    const isGenericUrl = /^https?:\/\//i.test(contentString);
+    if (isGenericUrl) return false; // Reject unsupported URLs
+
+    // Valid search query - alphanumeric with some special chars
+    const validSearchPattern = /^[a-zA-Z0-9\s\-'",!&().\u00C0-\u024F\u1E00-\u1EFF]+$/;
+    const isValidSearch = validSearchPattern.test(contentString) && contentString.length > minimumContentLength;
+
+    return isValidSearch;
 }
 
 function findCommand(discordClient, commandIdentifier) {
