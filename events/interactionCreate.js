@@ -137,6 +137,31 @@ async function handleSecureMusicButton(interaction, client) {
         const centralHandler = CentralEmbedHandler.getInstance(client);
         
         switch (action) {
+            case 'previous':
+                if (!player.previousTrack) {
+                    return interaction.reply({
+                        content: '❌ No previous song to play!',
+                        ephemeral: true
+                    });
+                }
+                
+                const prevTrack = player.previousTrack;
+                
+                // Add current track to front of queue if playing
+                if (player.current) {
+                    player.queue.unshift(player.current);
+                }
+                
+                // Play the previous track
+                player.queue.unshift(prevTrack);
+                player.stop();
+                
+                await interaction.reply({
+                    content: `⏮️ Playing previous: \`${prevTrack.info?.title || 'Unknown'}\``,
+                    ephemeral: true
+                });
+                break;
+                
             case 'pause':
                 player.pause(true);
                 await interaction.reply({

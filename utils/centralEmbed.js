@@ -374,6 +374,11 @@ class CentralEmbedHandler {
         const row1 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
+                    .setCustomId('music_previous')
+                    .setEmoji('⏮️')
+                    .setStyle(ButtonStyle.Primary),
+                    
+                new ButtonBuilder()
                     .setCustomId('music_skip')
                     .setEmoji('⏭️')
                     .setStyle(ButtonStyle.Primary),
@@ -391,17 +396,16 @@ class CentralEmbedHandler {
                 new ButtonBuilder()
                     .setCustomId('music_queue')
                     .setLabel('Queue')
-                    .setStyle(ButtonStyle.Success),
-                    
-                new ButtonBuilder()
-                    .setLabel('\u200B\u200BLoop\u200B')
-                    .setCustomId('music_loop')
-                    .setEmoji(this.getLoopEmoji(trackInfo.loop))
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(ButtonStyle.Success)
             );
 
         const row2 = new ActionRowBuilder()
             .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('music_loop')
+                    .setEmoji(this.getLoopEmoji(trackInfo.loop))
+                    .setStyle(ButtonStyle.Primary),
+                    
                 new ButtonBuilder()
                     .setCustomId('music_volume_down')
                     .setEmoji('🔉')
@@ -413,19 +417,14 @@ class CentralEmbedHandler {
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
-                    .setCustomId('music_clear')
-                    .setEmoji('🗑️')
-                    .setStyle(ButtonStyle.Secondary),
-
-                new ButtonBuilder()
                     .setCustomId('music_shuffle')
                     .setEmoji('🔀')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
-                    .setLabel('Support')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(config.bot.supportServer)
+                    .setCustomId('music_clear')
+                    .setEmoji('🗑️')
+                    .setStyle(ButtonStyle.Secondary)
             );
 
         return [row1, row2];

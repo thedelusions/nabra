@@ -270,6 +270,11 @@ class PlayerHandler {
                 const trackTitle = track?.info?.title || 'Unknown Track';
                 console.log(`🎵 Finished playing: ${trackTitle} in ${player.guildId}`);
 
+                // Store the previous track for "previous" command
+                if (track) {
+                    player.previousTrack = track;
+                }
+
                 if (this.statsService) {
                     await this.statsService.endSession(player, track);
                 }
