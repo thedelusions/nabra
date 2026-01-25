@@ -404,13 +404,17 @@ class CentralEmbedHandler {
         const row2 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('music_stop')
-                    .setEmoji('<:stop:1464823585146273967>')
+                    .setCustomId('music_queue')
+                    .setEmoji('<:queue:1464823466359521331>')
                     .setStyle(ButtonStyle.Secondary),
-                    
                 new ButtonBuilder()
                     .setCustomId('music_loop')
                     .setEmoji('<:repeat:1464823558126698602>')
+                    .setStyle(ButtonStyle.Secondary),
+
+                new ButtonBuilder()
+                    .setCustomId('music_stop')
+                    .setEmoji('<:stop:1464823585146273967>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
@@ -419,6 +423,16 @@ class CentralEmbedHandler {
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
+                    .setCustomId('music_nowplaying')
+                    .setEmoji('🎵')
+                    .setStyle(ButtonStyle.Secondary)
+              
+            );
+
+        // Row 3: Queue | Now Playing | Clear | Help | Support
+        const row3 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
                     .setCustomId('music_volume_down')
                     .setEmoji('🔉')
                     .setStyle(ButtonStyle.Secondary),
@@ -426,20 +440,6 @@ class CentralEmbedHandler {
                 new ButtonBuilder()
                     .setCustomId('music_volume_up')
                     .setEmoji('🔊')
-                    .setStyle(ButtonStyle.Secondary)
-            );
-
-        // Row 3: Queue | Now Playing | Clear | Help | Support
-        const row3 = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('music_queue')
-                    .setEmoji('<:queue:1464823466359521331>')
-                    .setStyle(ButtonStyle.Secondary),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_nowplaying')
-                    .setEmoji('🎵')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
