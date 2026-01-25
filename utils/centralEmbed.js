@@ -376,31 +376,26 @@ class CentralEmbedHandler {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
-                    .setLabel(trackInfo.paused ? 'Play' : 'Pause')
                     .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
                     .setStyle(ButtonStyle.Primary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_previous')
-                    .setLabel('Prev')
                     .setEmoji('<:previous:1464824227827023891>')
                     .setStyle(ButtonStyle.Primary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_skip')
-                    .setLabel('Next')
                     .setEmoji('<:next:1464824274186666139>')
                     .setStyle(ButtonStyle.Primary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_queue')
-                    .setLabel('Queue')
                     .setEmoji('<:queue:1464823466359521331>')
                     .setStyle(ButtonStyle.Primary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_stop')
-                    .setLabel('Stop')
                     .setEmoji('<:stop:1464823585146273967>')
                     .setStyle(ButtonStyle.Danger)
             );
@@ -410,31 +405,26 @@ class CentralEmbedHandler {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_loop')
-                    .setLabel('Loop')
                     .setEmoji('<:repeat:1464823558126698602>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_rewind')
-                    .setLabel('Rewind')
                     .setEmoji('⏪')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_forward')
-                    .setLabel('Forward')
                     .setEmoji('⏩')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_volume_down')
-                    .setLabel('Vol-')
                     .setEmoji('🔉')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_volume_up')
-                    .setLabel('Vol+')
                     .setEmoji('🔊')
                     .setStyle(ButtonStyle.Secondary)
             );
@@ -444,30 +434,25 @@ class CentralEmbedHandler {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_shuffle')
-                    .setLabel('Shuffle')
                     .setEmoji('<:shuffle2:1464823491009314951>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_clear')
-                    .setLabel('Clear')
                     .setEmoji('🗑️')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_nowplaying')
-                    .setLabel('Now')
                     .setEmoji('🎵')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_help')
-                    .setLabel('Help')
                     .setEmoji('❓')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
-                    .setLabel('Support')
                     .setEmoji('🔗')
                     .setStyle(ButtonStyle.Link)
                     .setURL('https://discord.gg/XxgZ9cXuqD')
