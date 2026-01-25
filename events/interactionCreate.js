@@ -1,6 +1,21 @@
 const { EmbedBuilder } = require('discord.js');
 const shiva = require('../shiva');
 
+// Helper functions for music buttons
+function formatTime(ms) {
+    if (!ms) return '0:00';
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+function createProgressBar(percent) {
+    const filled = Math.round(percent / 10);
+    const empty = 10 - filled;
+    return '▓'.repeat(filled) + '░'.repeat(empty);
+}
+
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction, client) {
@@ -278,6 +293,61 @@ async function handleSecureMusicButton(interaction, client) {
                 player.queue.shuffle();
                 await interaction.reply({
                     content: `🔀 Shuffled ${player.queue.size} songs in queue`,
+                    ephemeral: true
+                });
+                break;
+
+            case 'rewind':
+                // Rewind 10 seconds
+                const currentPosRewind = player.position;
+                const newPosRewind = Math.max(0, currentPosRewind - 10000);
+                player.seek(newPosRewind);
+                await interaction.reply({
+                    content: `⏪ Rewound 10 seconds (${formatTime(newPosRewind)})`,
+                    ephemeral: true
+                });
+                break;
+
+            case 'forward':
+                // Forward 10 seconds
+                const currentPosForward = player.position;
+                const trackDuration = player.current?.info?.length || 0;
+                const newPosForward = Math.min(trackDuration - 1000, currentPosForward + 10000);
+                player.seek(newPosForward);
+                await interaction.reply({
+                    content: `⏩ Forwarded 10 seconds (${formatTime(newPosForward)})`,
+                    ephemeral: true
+                });
+                break;
+
+            case 'nowplaying':
+                const currentSong = player.current;
+                if (!currentSong) {
+                    return interaction.reply({
+                        content: '❌ No song is currently playing!',
+                        ephemeral: true
+                    });
+                }
+                
+                const progress = Math.round((player.position / currentSong.info.length) * 100);
+                const progressBar = createProgressBar(progress);
+                
+                await interaction.reply({
+                    content: `🎵 **Now Playing**\n\`${currentSong.info.title}\`\n${progressBar} ${formatTime(player.position)}/${formatTime(currentSong.info.length)}`,
+                    ephemeral: true
+                });
+                break;
+
+            case 'help':
+                await interaction.reply({
+                    content: `🎵 **Nabra Music Controls**\n\n` +
+                        `**Row 1 - Playback**\n` +
+                        `▶️/⏸️ Play/Pause • ⏮️ Prev • ⏭️ Next • 📜 Queue • ⏹️ Stop\n\n` +
+                        `**Row 2 - Track**\n` +
+                        `🔁 Loop • ⏪ Rewind 10s • ⏩ Forward 10s • 🔉 Vol- • 🔊 Vol+\n\n` +
+                        `**Row 3 - Utility**\n` +
+                        `🔀 Shuffle • 🗑️ Clear Queue • 🎵 Now Playing • ❓ Help • 🔗 Support\n\n` +
+                        `Use \`/help\` for full command list!`,
                     ephemeral: true
                 });
                 break;

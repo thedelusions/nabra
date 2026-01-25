@@ -371,64 +371,111 @@ class CentralEmbedHandler {
     createAdvancedControlButtons(trackInfo) {
         if (!trackInfo) return [];
 
+        // Row 1: Playback Controls
         const row1 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
+                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
+                    .setLabel(trackInfo.paused ? 'Play' : 'Pause')
+                    .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
+                    .setStyle(ButtonStyle.Primary),
+                    
+                new ButtonBuilder()
                     .setCustomId('music_previous')
-                    .setEmoji('⏮️')
+                    .setLabel('Prev')
+                    .setEmoji('<:previous:1464824227827023891>')
                     .setStyle(ButtonStyle.Primary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_skip')
-                    .setEmoji('⏭️')
+                    .setLabel('Next')
+                    .setEmoji('<:next:1464824274186666139>')
                     .setStyle(ButtonStyle.Primary),
-                    
-                new ButtonBuilder()
-                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
-                    .setEmoji(trackInfo.paused ? '▶️' : '⏸️')
-                    .setStyle(ButtonStyle.Success),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_stop')
-                    .setEmoji('�')
-                    .setStyle(ButtonStyle.Danger),
                     
                 new ButtonBuilder()
                     .setCustomId('music_queue')
                     .setLabel('Queue')
-                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('<:queue:1464823466359521331>')
+                    .setStyle(ButtonStyle.Primary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_stop')
+                    .setLabel('Stop')
+                    .setEmoji('<:stop:1464823585146273967>')
+                    .setStyle(ButtonStyle.Danger)
             );
 
+        // Row 2: Track Controls
         const row2 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_loop')
-                    .setEmoji(this.getLoopEmoji(trackInfo.loop))
-                    .setStyle(ButtonStyle.Primary),
+                    .setLabel('Loop')
+                    .setEmoji('<:repeat:1464823558126698602>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_rewind')
+                    .setLabel('Rewind')
+                    .setEmoji('⏪')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_forward')
+                    .setLabel('Forward')
+                    .setEmoji('⏩')
+                    .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_volume_down')
-                    .setEmoji('�')
+                    .setLabel('Vol-')
+                    .setEmoji('🔉')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_volume_up')
+                    .setLabel('Vol+')
                     .setEmoji('🔊')
-                    .setStyle(ButtonStyle.Secondary),
+                    .setStyle(ButtonStyle.Secondary)
+            );
 
+        // Row 3: Utility Controls  
+        const row3 = new ActionRowBuilder()
+            .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_shuffle')
-                    .setEmoji('🔀')
+                    .setLabel('Shuffle')
+                    .setEmoji('<:shuffle2:1464823491009314951>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_clear')
+                    .setLabel('Clear')
                     .setEmoji('🗑️')
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_nowplaying')
+                    .setLabel('Now')
+                    .setEmoji('🎵')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_help')
+                    .setLabel('Help')
+                    .setEmoji('❓')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setLabel('Support')
+                    .setEmoji('🔗')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL('https://discord.gg/XxgZ9cXuqD')
             );
 
-        return [row1, row2];
+        return [row1, row2, row3];
     }
+
 
     getLoopEmoji(loopMode) {
         switch (loopMode) {
