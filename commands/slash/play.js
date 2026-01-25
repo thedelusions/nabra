@@ -12,17 +12,17 @@ function createMusicButtons() {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_previous')
-                    .setEmoji('<:Nabra_previous:1464937706613117056>')
+                    .setEmoji('<:previous:1464824227827023891>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_pause')
-                    .setEmoji('<:Nabra_pause:1464937750858825993>')
+                    .setEmoji('<:pause:1464823417248415829>')
                     .setStyle(ButtonStyle.Secondary),
     
                 new ButtonBuilder()
                     .setCustomId('music_skip')
-                    .setEmoji('<:Nabra_next:1464937677664030832>')
+                    .setEmoji('<:next:1464824274186666139>')
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
@@ -36,7 +36,7 @@ function createMusicButtons() {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_stop')
-                    .setEmoji('<:Nabra_stop:1464937648547299442>')
+                    .setEmoji('<:stop:1464823585146273967>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
