@@ -5,7 +5,7 @@ const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
 /**
  * Create music control buttons
- * @returns {ActionRowBuilder} Row of music control buttons
+ * @returns {ActionRowBuilder[]} Rows of music control buttons
  */
 function createMusicButtons() {
      const row1 = new ActionRowBuilder()
@@ -15,10 +15,9 @@ function createMusicButtons() {
                     .setEmoji('<:previous:1464824227827023891>')
                     .setStyle(ButtonStyle.Secondary),
                     
-                    
                 new ButtonBuilder()
-                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
-                    .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
+                    .setCustomId('music_pause')
+                    .setEmoji('<:pause:1464823417248415829>')
                     .setStyle(ButtonStyle.Secondary),
     
                 new ButtonBuilder()
@@ -32,7 +31,7 @@ function createMusicButtons() {
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        // Row 2: Stop | Loop | Shuffle | Vol- | Vol+
+        // Row 2: Stop | Loop | Shuffle | Help
         const row2 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -50,13 +49,13 @@ function createMusicButtons() {
                     .setEmoji('<:shuffle2:1464823491009314951>')
                     .setStyle(ButtonStyle.Secondary),
 
-                  new ButtonBuilder()
+                new ButtonBuilder()
                     .setCustomId('music_help')
                     .setEmoji('❓')
                     .setStyle(ButtonStyle.Secondary)  
             );
     return [row1, row2];
-    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
