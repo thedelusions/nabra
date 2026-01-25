@@ -1,11 +1,14 @@
-// Initialize Sentry early for error tracking
+// Initialize Sentry BEFORE importing express
 const Sentry = require('@sentry/node');
+const express = require("express");
+
 if (process.env.SENTRY_DSN) {
     Sentry.init({
         dsn: process.env.SENTRY_DSN,
         environment: process.env.NODE_ENV || 'development',
         tracesSampleRate: 0.1,
         integrations: [
+            Sentry.expressIntegration(),
             Sentry.mongooseIntegration()
         ]
     });
@@ -14,7 +17,6 @@ if (process.env.SENTRY_DSN) {
 require('./main');
 require('./shiva');
 const path = require('path');
-const express = require("express");
 const logger = require('./utils/logger');
 const cache = require('./utils/cache');
 const mongoose = require('mongoose');
