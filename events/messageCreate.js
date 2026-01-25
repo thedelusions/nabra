@@ -1,7 +1,8 @@
 const config = require('../config');
 const Server = require('../models/Server');
 const { EmbedBuilder } = require('discord.js');
-const shiva = require('../shiva'); 
+const shiva = require('../shiva');
+const { getCommand } = require('../main');
 
 const userCooldowns = new Map();
 const SPAM_THRESHOLD = 3;
@@ -1302,13 +1303,18 @@ async function isSongQuery(contentString) {
 }
 
 function findCommand(discordClient, commandIdentifier) {
-    const primaryCommandLookup = discordClient.commands.get(commandIdentifier);
+    // Use lazy loading getter for message commands
+    const primaryCommandLookup = getCommand(discordClient.commands, commandIdentifier);
     if (primaryCommandLookup) return primaryCommandLookup;
 
-    const aliasCommandLookup = discordClient.commands.find(commandObject =>
-        commandObject.aliases && commandObject.aliases.includes(commandIdentifier)
-    );
-    return aliasCommandLookup;
+    // Check aliases (need to iterate for lazy loaded commands)
+    for (const [name, cmd] of discordClient.commands) {
+        const command = cmd._lazy ? getCommand(discordClient.commands, name) : cmd;
+        if (command && command.aliases && command.aliases.includes(commandIdentifier)) {
+            return command;
+        }
+    }
+    return null;
 }
 
 setInterval(() => {

@@ -3,7 +3,7 @@
  * Comprehensive Discord Bot
  * 
  * @fileoverview Core application
- * @version 1.0.0
+ * @version 1.1.0
  * @author thedelusions
  */
 
@@ -22,6 +22,8 @@ const MemoryGarbageCollectionOptimizer = require('./utils/garbageCollector');
 const EnvironmentVariableConfigurationLoader = require('dotenv');
 const OureonClient = require('./utils/oureonClient');
 const shiva = require('./shiva');
+const logger = require('./utils/logger');
+
 // Initialize environment variable configuration subsystem
 EnvironmentVariableConfigurationLoader.config();
 
@@ -156,7 +158,7 @@ class DiscordClientRuntimeManager {
      * Handle application bootstrap failure with comprehensive error reporting
      */
     handleApplicationBootstrapFailure(exceptionInstance) {
-        console.error('❌ Failed to initialize bot:', exceptionInstance);
+        logger.error('❌ Failed to initialize bot', { error: exceptionInstance.message, stack: exceptionInstance.stack });
         process.exit(1);
     }
 }
@@ -178,7 +180,7 @@ class ApplicationBootstrapOrchestrator {
      */
     async executeDatabaseConnectionEstablishment() {
         await DatabaseConnectionEstablishmentService();
-        console.log('✅ MongoDB connected successfully');
+        logger.info('✅ MongoDB connected successfully');
     }
     
     /**
@@ -189,7 +191,7 @@ class ApplicationBootstrapOrchestrator {
             .executeMessageCommandDiscovery(this.clientRuntimeInstance)
             .executeSlashCommandDiscovery(this.clientRuntimeInstance);
         
-        console.log(`✅ Loaded ${commandRegistrationResults.totalCommands} commands`);
+        logger.info(`✅ Loaded ${commandRegistrationResults.totalCommands} commands`);
     }
     
     /**
@@ -200,7 +202,7 @@ class ApplicationBootstrapOrchestrator {
             .executeEventDiscovery()
             .bindEventHandlers(this.clientRuntimeInstance);
         
-        console.log(`✅ Loaded ${eventRegistrationResults.totalEvents} events`);
+        logger.info(`✅ Loaded ${eventRegistrationResults.totalEvents} events`);
     }
     
     /**
@@ -231,16 +233,18 @@ class ApplicationBootstrapOrchestrator {
 
 /**
  * Command Discovery and Registration Engine
- * Implements advanced filesystem scanning and module resolution
+ * Implements advanced filesystem scanning and lazy module resolution
  */
 class CommandDiscoveryEngine {
     constructor() {
         this.discoveredMessageCommands = 0;
         this.discoveredSlashCommands = 0;
+        this.lazyLoadEnabled = process.env.LAZY_LOAD_COMMANDS === 'true';
     }
     
     /**
      * Execute message command discovery with filesystem traversal
+     * Supports lazy loading for improved startup performance
      */
     executeMessageCommandDiscovery(clientInstance) {
         const messageCommandDirectoryPath = SystemPathResolutionUtility.join(__dirname, 'commands', 'message');
@@ -251,8 +255,21 @@ class CommandDiscoveryEngine {
                 .filter(fileEntity => fileEntity.endsWith('.js'));
             
             for (const commandFile of discoveredCommandFiles) {
-                const commandModuleInstance = require(SystemPathResolutionUtility.join(messageCommandDirectoryPath, commandFile));
-                clientInstance.commands.set(commandModuleInstance.name, commandModuleInstance);
+                const commandPath = SystemPathResolutionUtility.join(messageCommandDirectoryPath, commandFile);
+                
+                if (this.lazyLoadEnabled) {
+                    // Lazy load: Store path and load on first use
+                    const commandName = commandFile.replace('.js', '');
+                    clientInstance.commands.set(commandName, {
+                        _lazy: true,
+                        _path: commandPath,
+                        name: commandName
+                    });
+                } else {
+                    // Eager load: Load immediately
+                    const commandModuleInstance = require(commandPath);
+                    clientInstance.commands.set(commandModuleInstance.name, commandModuleInstance);
+                }
                 this.discoveredMessageCommands++;
             }
         }
@@ -261,7 +278,7 @@ class CommandDiscoveryEngine {
     }
     
     /**
-     * Execute slash command discovery with advanced module resolution
+     * Execute slash command discovery with lazy module resolution
      */
     executeSlashCommandDiscovery(clientInstance) {
         const slashCommandDirectoryPath = SystemPathResolutionUtility.join(__dirname, 'commands', 'slash');
@@ -272,7 +289,10 @@ class CommandDiscoveryEngine {
                 .filter(fileEntity => fileEntity.endsWith('.js'));
             
             for (const commandFile of discoveredCommandFiles) {
-                const commandModuleInstance = require(SystemPathResolutionUtility.join(slashCommandDirectoryPath, commandFile));
+                const commandPath = SystemPathResolutionUtility.join(slashCommandDirectoryPath, commandFile);
+                
+                // Slash commands are always eager loaded (needed for registration)
+                const commandModuleInstance = require(commandPath);
                 clientInstance.slashCommands.set(commandModuleInstance.data.name, commandModuleInstance);
                 this.discoveredSlashCommands++;
             }
@@ -281,6 +301,26 @@ class CommandDiscoveryEngine {
         return {
             totalCommands: this.discoveredMessageCommands + this.discoveredSlashCommands
         };
+    }
+    
+    /**
+     * Get command with lazy loading support
+     * @param {Collection} collection - Command collection
+     * @param {string} name - Command name
+     * @returns {Object} Command module
+     */
+    static getCommand(collection, name) {
+        const command = collection.get(name);
+        
+        if (command && command._lazy) {
+            // Lazy load the command now
+            const loadedCommand = require(command._path);
+            collection.set(name, loadedCommand);
+            logger.debug(`Lazy loaded command: ${name}`);
+            return loadedCommand;
+        }
+        
+        return command;
     }
 }
 
@@ -368,11 +408,11 @@ class AudioSubsystemIntegrationManager {
      */
     bindRiffyEventHandlers() {
         this.clientRuntimeInstance.riffy.on('nodeConnect', (audioNodeInstance) => {
-            console.log(`🎵 Lavalink node "${audioNodeInstance.name}" connected`);
+            logger.info(`🎵 Lavalink node "${audioNodeInstance.name}" connected`);
         });
         
         this.clientRuntimeInstance.riffy.on('nodeError', (audioNodeInstance, nodeErrorException) => {
-            console.error(`🔴 Lavalink node "${audioNodeInstance.name}" error:`, nodeErrorException.message);
+            logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: nodeErrorException.message });
         });
     }
 }
@@ -382,5 +422,8 @@ const enterpriseApplicationManager = new DiscordClientRuntimeManager();
 enterpriseApplicationManager.executeApplicationBootstrap();
 
 
-module.exports = enterpriseApplicationManager.clientRuntimeInstance;
+module.exports = {
+    client: enterpriseApplicationManager.clientRuntimeInstance,
+    getCommand: CommandDiscoveryEngine.getCommand
+};
 shiva.initialize(enterpriseApplicationManager.clientRuntimeInstance);

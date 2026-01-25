@@ -1,7 +1,37 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const shiva = require('../../shiva');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
+
+/**
+ * Create music control buttons
+ * @returns {ActionRowBuilder} Row of music control buttons
+ */
+function createMusicButtons() {
+    return new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('music_pause')
+                .setEmoji('⏸️')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('music_skip')
+                .setEmoji('⏭️')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('music_stop')
+                .setEmoji('⏹️')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('music_queue')
+                .setEmoji('📜')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('music_shuffle')
+                .setEmoji('🔀')
+                .setStyle(ButtonStyle.Secondary)
+        );
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -57,12 +87,15 @@ module.exports = {
             );
 
             const result = await playerHandler.playSong(player, query, interaction.user);
+            const buttons = createMusicButtons();
 
             if (result.type === 'track') {
                 const isPlaying = !player.playing && player.queue.size === 0;
                 const embed = MusicFormatters.createTrackAddedEmbed(result.track, player, isPlaying);
-                return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 10000));
+                return interaction.editReply({ embeds: [embed], components: [buttons] })
+                    .then(() => setTimeout(() => {
+                        interaction.editReply({ components: [] }).catch(() => {});
+                    }, 60000)); // Remove buttons after 60s
             } else if (result.type === 'playlist') {
                 const embed = MusicFormatters.createPlaylistAddedEmbed(
                     { name: result.name },
@@ -70,8 +103,10 @@ module.exports = {
                     interaction.user,
                     result.firstTrack
                 );
-                return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 10000));
+                return interaction.editReply({ embeds: [embed], components: [buttons] })
+                    .then(() => setTimeout(() => {
+                        interaction.editReply({ components: [] }).catch(() => {});
+                    }, 60000)); // Remove buttons after 60s
             } else {
                 const embed = MusicFormatters.createErrorEmbed('No results found for your query!');
                 return interaction.editReply({ embeds: [embed] })

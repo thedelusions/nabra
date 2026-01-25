@@ -1,6 +1,8 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config');
 const Server = require('../models/Server');
+const cache = require('./cache');
+const logger = require('./logger');
 
 // Singleton instance for multi-server support
 let instance = null;
@@ -8,9 +10,9 @@ let instance = null;
 class CentralEmbedHandler {
     constructor(client) {
         this.client = client;
-        // Cache for server configs to reduce database queries
+        // Local cache fallback (also used when Redis unavailable)
         this.configCache = new Map();
-        this.CACHE_TTL = 60000; // 1 minute cache
+        this.CACHE_TTL = 60; // 60 seconds (in seconds for Redis)
     }
     
     /**
@@ -22,32 +24,45 @@ class CentralEmbedHandler {
     static getInstance(client) {
         if (!instance) {
             instance = new CentralEmbedHandler(client);
-            console.log('✅ CentralEmbedHandler singleton created');
+            logger.info('✅ CentralEmbedHandler singleton created');
         }
         return instance;
     }
     
     /**
-     * Get server config with caching to reduce DB queries
+     * Get server config with Redis caching to reduce DB queries
      */
     async getServerConfig(guildId, forceRefresh = false) {
-        const cached = this.configCache.get(guildId);
-        const now = Date.now();
+        const cacheKey = `server:config:${guildId}`;
         
-        if (!forceRefresh && cached && (now - cached.timestamp) < this.CACHE_TTL) {
-            return cached.config;
+        if (!forceRefresh) {
+            // Try to get from cache first
+            const cached = await cache.get(cacheKey);
+            if (cached) {
+                logger.debug(`Cache hit for server config: ${guildId}`);
+                return cached;
+            }
         }
         
-        const config = await Server.findById(guildId);
-        this.configCache.set(guildId, { config, timestamp: now });
-        return config;
+        // Fetch from database
+        const serverConfig = await Server.findById(guildId);
+        
+        // Store in cache
+        if (serverConfig) {
+            await cache.set(cacheKey, serverConfig.toObject(), this.CACHE_TTL);
+        }
+        
+        return serverConfig;
     }
     
     /**
      * Invalidate cache for a guild (call after updates)
      */
-    invalidateCache(guildId) {
+    async invalidateCache(guildId) {
+        const cacheKey = `server:config:${guildId}`;
+        await cache.del(cacheKey);
         this.configCache.delete(guildId);
+        logger.debug(`Cache invalidated for guild: ${guildId}`);
     }
 
 
@@ -68,7 +83,7 @@ class CentralEmbedHandler {
             const channel = await this.client.channels.fetch(channelId);
             
             const embed = new EmbedBuilder()
-            .setAuthor({ name: 'Ultimate Music Control Center', iconURL: 'https://cdn.discordapp.com/emojis/896724352949706762.gif', url: 'https://discord.gg/xQF9f9yUEM' })
+            .setAuthor({ name: 'Ultimate Music Control Center', iconURL: 'https://cdn.discordapp.com/emojis/896724352949706762.gif', url: 'https://discord.gg/v9SzcXyzrk' })
                 .setDescription([
                     '',
                     '- Simply type a **song name** or **YouTube link** to start the party!',
@@ -140,10 +155,10 @@ class CentralEmbedHandler {
                 }
             }
 
-            console.log(`✅ Central embed created in ${guildId}`);
+            logger.info(`✅ Central embed created in ${guildId}`);
             return message;
         } catch (error) {
-            console.error('Error creating central embed:', error);
+            logger.error('Error creating central embed', { error: error.message, guildId });
             return null;
         }
     }
@@ -162,7 +177,7 @@ class CentralEmbedHandler {
                 try {
                     const guild = this.client.guilds.cache.get(serverConfig._id);
                     if (!guild) {
-                        console.log(`⚠️ Bot no longer in guild ${serverConfig._id}, cleaning up database...`);
+                        logger.warn(`⚠️ Bot no longer in guild ${serverConfig._id}, cleaning up database...`);
                         await Server.findByIdAndUpdate(serverConfig._id, {
                             'centralSetup.enabled': false,
                             'centralSetup.embedId': null
@@ -172,7 +187,7 @@ class CentralEmbedHandler {
 
                     const channel = await this.client.channels.fetch(serverConfig.centralSetup.channelId).catch(() => null);
                     if (!channel) {
-                        console.log(`⚠️ Central channel not found in ${guild.name}, cleaning up...`);
+                        logger.warn(`⚠️ Central channel not found in ${guild.name}, cleaning up...`);
                         await Server.findByIdAndUpdate(serverConfig._id, {
                             'centralSetup.enabled': false,
                             'centralSetup.embedId': null
@@ -182,13 +197,13 @@ class CentralEmbedHandler {
 
                     const botMember = guild.members.me;
                     if (!channel.permissionsFor(botMember).has(['SendMessages', 'EmbedLinks'])) {
-                        console.log(`⚠️ Missing permissions in ${guild.name}, skipping...`);
+                        logger.warn(`⚠️ Missing permissions in ${guild.name}, skipping...`);
                         continue;
                     }
 
                     const message = await channel.messages.fetch(serverConfig.centralSetup.embedId).catch(() => null);
                     if (!message) {
-                        console.log(`⚠️ Central embed not found in ${guild.name}, creating new one...`);
+                        logger.warn(`⚠️ Central embed not found in ${guild.name}, creating new one...`);
                         const newMessage = await this.createCentralEmbed(channel.id, guild.id);
                         if (newMessage) {
                             resetCount++;
@@ -213,7 +228,7 @@ class CentralEmbedHandler {
             }
 
         } catch (error) {
-            console.error('❌ Error during central embed auto-reset:', error);
+            logger.error('Error during central embed auto-reset', { error: error.message });
         }
     }
 
@@ -228,19 +243,19 @@ class CentralEmbedHandler {
             }
             
             if (!serverConfig.centralSetup.embedId || !serverConfig.centralSetup.channelId) {
-                console.log(`⚠️ Central embed missing embedId or channelId for guild ${guildId}`);
+                logger.debug(`Central embed missing embedId or channelId for guild ${guildId}`);
                 return;
             }
 
             const channel = await this.client.channels.fetch(serverConfig.centralSetup.channelId).catch(() => null);
             if (!channel) {
-                console.log(`⚠️ Could not fetch central channel for guild ${guildId}`);
+                logger.warn(`Could not fetch central channel for guild ${guildId}`);
                 return;
             }
             
             const message = await channel.messages.fetch(serverConfig.centralSetup.embedId).catch(() => null);
             if (!message) {
-                console.log(`⚠️ Could not fetch central embed message for guild ${guildId}, recreating...`);
+                logger.warn(`Could not fetch central embed message for guild ${guildId}, recreating...`);
                 // Try to recreate the embed
                 const newMessage = await this.createCentralEmbed(serverConfig.centralSetup.channelId, guildId);
                 if (!newMessage) return;
@@ -262,7 +277,7 @@ class CentralEmbedHandler {
                     .setAuthor({ 
                         name: `${trackInfo.title}`, 
                         iconURL: 'https://cdn.discordapp.com/emojis/896724352949706762.gif',
-                        url: 'https://discord.gg/xQF9f9yUEM' 
+                        url: 'https://discord.gg/v9SzcXyzrk' 
                     })
                     .setDescription([
                         `**🎤 Artist:** ${trackInfo.author}`,
@@ -295,7 +310,7 @@ class CentralEmbedHandler {
             } else {
                
                 embed = new EmbedBuilder()
-                .setAuthor({ name: 'Ultimate Music Control Center', iconURL: 'https://cdn.discordapp.com/emojis/896724352949706762.gif', url: 'https://discord.gg/xQF9f9yUEM' })
+                .setAuthor({ name: 'Ultimate Music Control Center', iconURL: 'https://cdn.discordapp.com/emojis/896724352949706762.gif', url: 'https://discord.gg/v9SzcXyzrk' })
                 .setDescription([
                     '',
                     '- Simply type a **song name** or **YouTube link** to start the party!',
@@ -349,7 +364,7 @@ class CentralEmbedHandler {
             await message.edit({ embeds: [embed], components });
 
         } catch (error) {
-            console.error('Error updating central embed:', error);
+            logger.error('Error updating central embed', { error: error.message, guildId });
         }
     }
 
