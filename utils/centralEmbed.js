@@ -377,27 +377,27 @@ class CentralEmbedHandler {
                 new ButtonBuilder()
                     .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
                     .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
-                    .setStyle(ButtonStyle.Primary),
+                    .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_previous')
                     .setEmoji('<:previous:1464824227827023891>')
-                    .setStyle(ButtonStyle.Primary),
+                    .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_skip')
                     .setEmoji('<:next:1464824274186666139>')
-                    .setStyle(ButtonStyle.Primary),
+                    .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_queue')
                     .setEmoji('<:queue:1464823466359521331>')
-                    .setStyle(ButtonStyle.Primary),
+                    .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_stop')
                     .setEmoji('<:stop:1464823585146273967>')
-                    .setStyle(ButtonStyle.Danger)
+                    .setStyle(ButtonStyle.Secondary)
             );
 
         // Row 2: Track Controls
