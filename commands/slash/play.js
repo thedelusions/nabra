@@ -116,7 +116,7 @@ module.exports = {
             if (result.type === 'track') {
                 const isPlaying = !player.playing && player.queue.size === 0;
                 const embed = MusicFormatters.createTrackAddedEmbed(result.track, player, isPlaying);
-                return interaction.editReply({ embeds: [embed], components: [buttons] })
+                return interaction.editReply({ embeds: [embed], components: buttons })
                     .then(() => setTimeout(() => {
                         interaction.editReply({ components: [] }).catch(() => {});
                     }, 60000)); // Remove buttons after 60s
@@ -127,7 +127,7 @@ module.exports = {
                     interaction.user,
                     result.firstTrack
                 );
-                return interaction.editReply({ embeds: [embed], components: [buttons] })
+                return interaction.editReply({ embeds: [embed], components: buttons })
                     .then(() => setTimeout(() => {
                         interaction.editReply({ components: [] }).catch(() => {});
                     }, 60000)); // Remove buttons after 60s
