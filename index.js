@@ -1,6 +1,5 @@
-// Initialize Sentry BEFORE importing express
+// Initialize Sentry FIRST before any other imports
 const Sentry = require('@sentry/node');
-const express = require("express");
 
 if (process.env.SENTRY_DSN) {
     Sentry.init({
@@ -14,6 +13,8 @@ if (process.env.SENTRY_DSN) {
     });
 }
 
+// Now import everything else AFTER Sentry is initialized
+const express = require("express");
 require('./main');
 require('./shiva');
 const path = require('path');
