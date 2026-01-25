@@ -410,12 +410,12 @@ class CentralEmbedHandler {
                     
                 new ButtonBuilder()
                     .setCustomId('music_rewind')
-                    .setEmoji('⏪')
+                    .setEmoji('<:rewind:1464826397401940071>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_forward')
-                    .setEmoji('⏩')
+                    .setEmoji('<:rewind1:1464826294494695565>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
