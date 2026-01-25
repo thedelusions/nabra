@@ -376,7 +376,7 @@ class CentralEmbedHandler {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_previous')
-                    .setEmoji('<:previous:1464824227827023891>')
+                    .setEmoji('<:Nabra_previous:1464937706613117056>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
@@ -386,7 +386,7 @@ class CentralEmbedHandler {
                     
                 new ButtonBuilder()
                     .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
-                    .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
+                    .setEmoji(trackInfo.paused ? '<:Nabra_play:1464937747432083599>' : '<:Nabra_pause:1464937750858825993>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
@@ -396,7 +396,7 @@ class CentralEmbedHandler {
                     
                 new ButtonBuilder()
                     .setCustomId('music_skip')
-                    .setEmoji('<:next:1464824274186666139>')
+                    .setEmoji('<:Nabra_next:1464937677664030832>')
                     .setStyle(ButtonStyle.Secondary)
             );
 
@@ -405,7 +405,7 @@ class CentralEmbedHandler {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_stop')
-                    .setEmoji('<:stop:1464823585146273967>')
+                    .setEmoji('<:Nabra_stop:1464937648547299442>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
