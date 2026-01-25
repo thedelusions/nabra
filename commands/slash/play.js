@@ -8,30 +8,55 @@ const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
  * @returns {ActionRowBuilder} Row of music control buttons
  */
 function createMusicButtons() {
-    return new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('music_pause')
-                .setEmoji('⏸️')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('music_skip')
-                .setEmoji('⏭️')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('music_stop')
-                .setEmoji('⏹️')
-                .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-                .setCustomId('music_queue')
-                .setEmoji('📜')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('music_shuffle')
-                .setEmoji('🔀')
-                .setStyle(ButtonStyle.Secondary)
-        );
-}
+     const row1 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('music_previous')
+                    .setEmoji('<:previous:1464824227827023891>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                    
+                new ButtonBuilder()
+                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
+                    .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
+                    .setStyle(ButtonStyle.Secondary),
+    
+                new ButtonBuilder()
+                    .setCustomId('music_skip')
+                    .setEmoji('<:next:1464824274186666139>')
+                    .setStyle(ButtonStyle.Secondary),
+
+                new ButtonBuilder()
+                    .setCustomId('music_queue')
+                    .setEmoji('<:queue:1464823466359521331>')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        // Row 2: Stop | Loop | Shuffle | Vol- | Vol+
+        const row2 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('music_stop')
+                    .setEmoji('<:stop:1464823585146273967>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_loop')
+                    .setEmoji('<:repeat:1464823558126698602>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_shuffle')
+                    .setEmoji('<:shuffle2:1464823491009314951>')
+                    .setStyle(ButtonStyle.Secondary),
+
+                  new ButtonBuilder()
+                    .setCustomId('music_help')
+                    .setEmoji('❓')
+                    .setStyle(ButtonStyle.Secondary)  
+            );
+    return [row1, row2];
+    }
 
 module.exports = {
     data: new SlashCommandBuilder()
