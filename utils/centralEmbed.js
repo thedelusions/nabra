@@ -371,41 +371,12 @@ class CentralEmbedHandler {
     createAdvancedControlButtons(trackInfo) {
         if (!trackInfo) return [];
 
-        // Row 1: Playback Controls
+        // Row 1: Previous | Rewind | Play/Pause | Forward | Next
         const row1 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
-                    .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
-                    .setStyle(ButtonStyle.Secondary),
-                    
-                new ButtonBuilder()
                     .setCustomId('music_previous')
                     .setEmoji('<:previous:1464824227827023891>')
-                    .setStyle(ButtonStyle.Secondary),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_skip')
-                    .setEmoji('<:next:1464824274186666139>')
-                    .setStyle(ButtonStyle.Secondary),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_queue')
-                    .setEmoji('<:queue:1464823466359521331>')
-                    .setStyle(ButtonStyle.Secondary),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_stop')
-                    .setEmoji('<:stop:1464823585146273967>')
-                    .setStyle(ButtonStyle.Secondary)
-            );
-
-        // Row 2: Track Controls
-        const row2 = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('music_loop')
-                    .setEmoji('<:repeat:1464823558126698602>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
@@ -414,8 +385,37 @@ class CentralEmbedHandler {
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
+                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
+                    .setEmoji(trackInfo.paused ? '<:play:1464823386780864563>' : '<:pause:1464823417248415829>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
                     .setCustomId('music_forward')
                     .setEmoji('<:rewind1:1464826294494695565>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_skip')
+                    .setEmoji('<:next:1464824274186666139>')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        // Row 2: Stop | Loop | Shuffle | Vol- | Vol+
+        const row2 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('music_stop')
+                    .setEmoji('<:stop:1464823585146273967>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_loop')
+                    .setEmoji('<:repeat:1464823558126698602>')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_shuffle')
+                    .setEmoji('<:shuffle2:1464823491009314951>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
@@ -429,22 +429,22 @@ class CentralEmbedHandler {
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        // Row 3: Utility Controls  
+        // Row 3: Queue | Now Playing | Clear | Help | Support
         const row3 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('music_shuffle')
-                    .setEmoji('<:shuffle2:1464823491009314951>')
-                    .setStyle(ButtonStyle.Secondary),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_clear')
-                    .setEmoji('🗑️')
+                    .setCustomId('music_queue')
+                    .setEmoji('<:queue:1464823466359521331>')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_nowplaying')
                     .setEmoji('🎵')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_clear')
+                    .setEmoji('🗑️')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
