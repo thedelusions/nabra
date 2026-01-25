@@ -1,5 +1,33 @@
+/**
+ * Oureon API Client for Nabra
+ * 
+ * Placeholder class - full implementation commented out below.
+ * This allows the bot to run without Oureon integration.
+ */
+
+class OureonClient {
+  constructor() {
+    this.enabled = false;
+    console.log('✅ OureonClient initialized');
+  }
+
+  // Stub methods that do nothing
+  trackPlayed() {}
+  trackSkipped() {}
+  trackSearched() {}
+  commandUsed() {}
+  botJoinedServer() {}
+  botLeftServer() {}
+  errorOccurred() {}
+  queueEvent() {}
+  flush() {}
+  shutdown() {}
+}
+
+module.exports = OureonClient;
+
 // /**
-//  * Oureon API Client for Nabra
+//  * Oureon API Client for Nabra (Full Implementation)
 //  * 
 //  * Sends events to the Oureon backend for centralized analytics.
 //  * This runs alongside your existing local StatsService.
