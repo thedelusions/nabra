@@ -371,70 +371,92 @@ class CentralEmbedHandler {
     createAdvancedControlButtons(trackInfo) {
         if (!trackInfo) return [];
 
+        // Row 1: Prev, Pause/Resume, Next, Queue
         const row1 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_previous')
+                    .setLabel('Prev')
                     .setEmoji('⏮️')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
+                    .setLabel(trackInfo.paused ? 'Resume' : 'Pause')
+                    .setEmoji(trackInfo.paused ? '▶️' : '⏸️')
                     .setStyle(ButtonStyle.Primary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_skip')
+                    .setLabel('Next')
                     .setEmoji('⏭️')
-                    .setStyle(ButtonStyle.Primary),
-                    
-                new ButtonBuilder()
-                    .setCustomId(trackInfo.paused ? 'music_resume' : 'music_pause')
-                    .setEmoji(trackInfo.paused ? '▶️' : '⏸️')
-                    .setStyle(ButtonStyle.Success),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_stop')
-                    .setEmoji('🛑')
-                    .setStyle(ButtonStyle.Danger),
+                    .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_queue')
                     .setLabel('Queue')
-                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('📜')
+                    .setStyle(ButtonStyle.Secondary)
             );
 
+        // Row 2: Repeat, Rewind, Forward, Volume, Stop
         const row2 = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_loop')
+                    .setLabel('Repeat')
                     .setEmoji(this.getLoopEmoji(trackInfo.loop))
-                    .setStyle(ButtonStyle.Primary),
-                    
-                new ButtonBuilder()
-                    .setCustomId('music_volume_down')
-                    .setEmoji('🔉')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
-                    .setCustomId('music_volume_up')
+                    .setCustomId('music_rewind')
+                    .setLabel('Rewind')
+                    .setEmoji('⏪')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_forward')
+                    .setLabel('Forward')
+                    .setEmoji('⏩')
+                    .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_volume')
+                    .setLabel('Volume')
                     .setEmoji('🔊')
                     .setStyle(ButtonStyle.Secondary),
+                    
+                new ButtonBuilder()
+                    .setCustomId('music_stop')
+                    .setLabel('Stop')
+                    .setEmoji('⏹️')
+                    .setStyle(ButtonStyle.Danger)
+            );
 
+        // Row 3: Shuffle, Clear
+        const row3 = new ActionRowBuilder()
+            .addComponents(
                 new ButtonBuilder()
                     .setCustomId('music_shuffle')
+                    .setLabel('Shuffle')
                     .setEmoji('🔀')
                     .setStyle(ButtonStyle.Secondary),
                     
                 new ButtonBuilder()
                     .setCustomId('music_clear')
+                    .setLabel('Clear')
                     .setEmoji('🗑️')
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        return [row1, row2];
+        return [row1, row2, row3];
     }
 
     getLoopEmoji(loopMode) {
         switch (loopMode) {
             case 'track': return '🔂';
             case 'queue': return '🔁';
-            default: return '⏺️';
+            default: return '➡️';
         }
     }
 

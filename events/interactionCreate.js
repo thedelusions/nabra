@@ -221,7 +221,48 @@ async function handleSecureMusicButton(interaction, client) {
                 player.setLoop(newLoop);
                 const loopEmojis = { none: '➡️', track: '🔂', queue: '🔁' };
                 await interaction.reply({
-                    content: `${loopEmojis[newLoop]} Loop mode: **${newLoop}**`,
+                    content: `${loopEmojis[newLoop]} Repeat: **${newLoop === 'none' ? 'Off' : newLoop}**`,
+                    ephemeral: true
+                });
+                await updateCentralEmbed();
+                break;
+            
+            case 'rewind':
+                const rewindAmount = 10000; // 10 seconds
+                const currentPosRewind = player.position || 0;
+                const newPosRewind = Math.max(0, currentPosRewind - rewindAmount);
+                player.seek(newPosRewind);
+                await interaction.reply({
+                    content: `⏪ Rewound 10 seconds`,
+                    ephemeral: true
+                });
+                break;
+                
+            case 'forward':
+                const forwardAmount = 10000; // 10 seconds
+                const currentPosForward = player.position || 0;
+                const trackDuration = player.current?.info?.length || 0;
+                const newPosForward = Math.min(trackDuration - 1000, currentPosForward + forwardAmount);
+                player.seek(newPosForward);
+                await interaction.reply({
+                    content: `⏩ Forwarded 10 seconds`,
+                    ephemeral: true
+                });
+                break;
+                
+            case 'volume':
+                // Cycle through volume levels: 25 -> 50 -> 75 -> 100 -> 25
+                const currentVol = player.volume || 50;
+                let newVol;
+                if (currentVol < 25) newVol = 25;
+                else if (currentVol < 50) newVol = 50;
+                else if (currentVol < 75) newVol = 75;
+                else if (currentVol < 100) newVol = 100;
+                else newVol = 25;
+                
+                player.setVolume(newVol);
+                await interaction.reply({
+                    content: `🔊 Volume: **${newVol}%**`,
                     ephemeral: true
                 });
                 await updateCentralEmbed();
