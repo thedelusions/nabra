@@ -49,7 +49,7 @@ module.exports = {
             const currentTrack = player.current;
 
             if (!currentTrack && queue.size === 0) {
-                const embed = new EmbedBuilder().setDescription('📜 Queue is empty!');
+                const embed = new EmbedBuilder().setDescription('<:queue:1464823466359521331> Queue is empty!');
                 return interaction.editReply({ embeds: [embed] })
                     .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
             }
@@ -70,7 +70,7 @@ module.exports = {
             if (queue.size > 0) {
                 const queueTracks = Array.from(queue).slice(startIndex, endIndex);
                 if (queueTracks.length > 0) {
-                    description += `📋 **Up Next (${queue.size} songs)**\n`;
+                    description += `<:queue:1464823466359521331> **Up Next (${queue.size} songs)**\n`;
                     description += queueTracks.map((track, index) => {
                         const position = startIndex + index + 1;
                         const duration = formatDuration(track.info.length);

@@ -59,7 +59,7 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor('#9B59B6')
-                .setTitle('📜 Music Queue')
+                .setTitle('<:queue:1464823466359521331> Music Queue')
                 .setTimestamp();
 
             // Now playing
@@ -90,7 +90,7 @@ module.exports = {
                     }).join('\n\n');
 
                     embed.addFields({
-                        name: `📋 Up Next (${queue.size} ${queue.size === 1 ? 'song' : 'songs'})`,
+                        name: `<:queue:1464823466359521331> Up Next (${queue.size} ${queue.size === 1 ? 'song' : 'songs'})`,
                         value: queueList,
                         inline: false
                     });

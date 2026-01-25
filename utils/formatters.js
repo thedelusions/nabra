@@ -142,10 +142,10 @@ class MusicFormatters {
             .addFields(
                 { name: '🎤 Artist', value: track.info.author || 'Unknown', inline: true },
                 { name: '⏱️ Duration', value: duration, inline: true },
-                { name: '🔊 Volume', value: `${player.volume || 50}%`, inline: true },
+                { name: '<:volume:1464838911439409305> Volume', value: `${player.volume || 50}%`, inline: true },
                 { name: '📊 Progress', value: `${progress}\n${position} / ${duration}`, inline: false },
                 { name: '🔁 Loop', value: `${loopEmoji} ${player.loop || 'Off'}`, inline: true },
-                { name: '📜 Queue', value: `${player.queue.size} songs`, inline: true },
+                { name: '<:queue:1464823466359521331> Queue', value: `${player.queue.size} songs`, inline: true },
                 { name: '⚡ Status', value: `${statusEmoji} ${player.paused ? 'Paused' : 'Playing'}`, inline: true }
             )
             .setFooter({ 
