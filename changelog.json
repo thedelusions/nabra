@@ -1,12 +1,12 @@
 {
     "currentVersion": "1.3.0",
-    "lastAnnouncedVersion": "1.2.0",
+    "lastAnnouncedVersion": "1.3.0",
     "supportServerId": "1181577122456805467",
     "announcementChannelId": "1465228349139058761",
     "changes": [
         {
             "version": "1.3.0",
-            "date": "",
+            "date": "2026-01-26",
             "title": "🎉 Major Update - DJ Mode, Queue Improvements & More!",
             "description": "Packed with new features for better music control and queue management!",
             "features": [
@@ -25,7 +25,7 @@
                 "DJ approval mentions individual DJs in VC (not the role)",
                 "Auto-disconnect after 3 minutes of inactivity"
             ],
-            "announced": false
+            "announced": true
         }
     ]
 }
