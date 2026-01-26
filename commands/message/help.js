@@ -35,10 +35,11 @@ module.exports = {
                     {
                         name: '🎧 Essential Commands',
                         value: 
-                            `\`${prefix}play <song/url>\` and \`${prefix}p \` or \`/play\` - Play music\n` +
+                            `\`${prefix}play <song/url>\` or \`/play\` - Play music\n` +
+                            `\`${prefix}pr <song>\` or \`/play-request\` - Request song (DJ mode)\n` +
                             `\`${prefix}pause\` or \`/pause\` - Pause playback\n` +
                             `\`${prefix}resume\` or \`/resume\` - Resume playback\n` +
-                            `\`${prefix}skip\` and \`${prefix}s \`  or \`/skip\` - Skip current song\n` +
+                            `\`${prefix}skip\` or \`/skip\` - Skip current song\n` +
                             `\`${prefix}stop\` or \`/stop\` - Stop and clear queue\n` +
                             `\`${prefix}join\` or \`/join\` - Join your voice channel`,
                         inline: false
@@ -46,49 +47,58 @@ module.exports = {
                     {
                         name: '📋 Queue Management',
                         value: 
-                            `\`${prefix}queue\` and \`${prefix}q \`  or \`/queue\` - View song queue\n` +
-                            `\`${prefix}nowplaying\` and \`${prefix}np \`  - Show current song\n` +
-                            `\`${prefix}loop [mode]\` and \`${prefix}l \`  or \`/loop\` - Toggle loop (off/track/queue)\n` +
-                            `\`${prefix}shuffle\` and \`${prefix}sh \`  or \`/shuffle\` - Shuffle queue\n` +
+                            `\`${prefix}queue\` or \`/queue\` - View queue (with pagination)\n` +
+                            `\`${prefix}nowplaying\` or \`/nowplaying\` - Show current song\n` +
+                            `\`${prefix}loop [mode]\` or \`/loop\` - Toggle loop (off/track/queue)\n` +
+                            `\`${prefix}shuffle\` or \`/shuffle\` - Shuffle queue\n` +
                             `\`${prefix}clear [from]\` or \`/clear\` - Clear queue\n` +
-                            `\`${prefix}remove <position>\` or \`/remove\` - Remove song\n` +
+                            `\`${prefix}remove <pos>\` or \`/remove\` - Remove song (with search)\n` +
                             `\`${prefix}move <from> <to>\` or \`/move\` - Move songs`,
                         inline: false
                     },
                     {
                         name: '⏯️ Playback Control',
                         value: 
-                            `\`${prefix}forward [sec]\` and \`${prefix}f [SEC]\`  or \`/forward\` - Fast forward ⏩\n` +
+                            `\`${prefix}forward [sec]\` or \`/forward\` - Fast forward ⏩\n` +
                             `\`${prefix}rewind [sec]\` or \`/rewind\` - Rewind ⏪\n` +
-                            `\`${prefix}jump <position>\` and \`${prefix}j \`  or \`/jump\` - Jump to track\n` +
-                            `\`${prefix}volume [1-100]\` and \`${prefix}v [1-100]\`  or \`/volume\` - Adjust volume\n` +
+                            `\`${prefix}jump <pos>\` or \`/jump\` - Jump to track\n` +
+                            `\`${prefix}seek <time>\` or \`/seek\` - Seek to timestamp\n` +
+                            `\`${prefix}volume [1-100]\` or \`/volume\` - Adjust volume\n` +
                             `\`/autoplay\` - Toggle autoplay mode`,
                         inline: false
                     },
                     {
                         name: '⚙️ Settings & Admin',
                         value: 
-                            `\`${prefix}247\` or \`/24-7\` - Toggle 24/7 mode (Admin)\n` +
-                            `\`/setup-central\` - Set up control center\n` +
+                            `\`${prefix}247\` or \`/24-7\` - Toggle 24/7 mode\n` +
+                            `\`/setup-central\` - Setup/configure control center\n` +
                             `\`/disable-central\` - Disable control center\n` +
-                            `\`/clean-up\` - Clean up bot messages`,
+                            `\`/clean [amount]\` - Delete bot messages\n` +
+                            `\`/clean-up\` - Clean up old bot messages`,
+                        inline: false
+                    },
+                    {
+                        name: '🎫 DJ Request Mode',
+                        value: 
+                            `Enable via \`/setup-central dj-request-mode:True\`\n` +
+                            `Non-DJs use \`/play-request\` for approval\n` +
+                            `DJs approve/reject requests with buttons`,
                         inline: false
                     },
                     {
                         name: '📡 Supported Platforms',
-                        value: '🎬 YouTube • 🎧 Spotify • 🔊 SoundCloud',
+                        value: '🎬 YouTube • 🎧 Spotify • 🔊 SoundCloud • 🎵 Deezer',
                         inline: false
                     },
                     {
                         name: '💡 Need Help?',
                         value: 
-                            `• Use \`${prefix}support\` for support server link\n` +
-                            `• Visit: Website Soon!\n` +
+                            `• Use \`${prefix}support\` for support server\n` +
                             `• Discord: https://discord.gg/qKKBqNSD65`,
                         inline: false
                     }
                 )
-                .setFooter({ text: 'Developed by 𝖇𝖎𝖔𝖘 • Tip: Most commands work with both prefix and slash!' })
+                .setFooter({ text: 'Developed by 𝖇𝖎𝖔𝖘 • Duplicate detection & smart suggestions enabled!' })
                 .setTimestamp();
 
             await message.reply({ embeds: [embed] });

@@ -32,6 +32,7 @@ module.exports = {
                         name: '🎧 Essential Commands',
                         value: [
                             '`/play <song>` - Play music',
+                            '`/play-request` - Request song (DJ mode)',
                             '`/pause` - Pause playback',
                             '`/resume` - Resume playback',
                             '`/skip` - Skip current song',
@@ -43,12 +44,13 @@ module.exports = {
                     {
                         name: '📋 Queue Management',
                         value: [
-                            '`/queue` - View song queue',
+                            '`/queue` - View queue (paginated)',
                             '`/nowplaying` - Show current song',
                             '`/loop` - Toggle loop mode',
                             '`/shuffle` - Shuffle queue',
                             '`/clear` - Clear queue',
-                            '`/remove` - Remove song'
+                            '`/remove` - Remove (with search)',
+                            '`/move` - Move songs'
                         ].join('\n'),
                         inline: true
                     },
@@ -58,6 +60,7 @@ module.exports = {
                             '`/forward` - Fast forward ⏩',
                             '`/rewind` - Rewind ⏪',
                             '`/jump` - Jump to track',
+                            '`/seek` - Seek to timestamp',
                             '`/volume` - Adjust volume',
                             '`/autoplay` - Toggle autoplay'
                         ].join('\n'),
@@ -67,11 +70,22 @@ module.exports = {
                         name: '⚙️ Settings & Admin',
                         value: [
                             '`/24-7` - Toggle 24/7 mode',
-                            '`/setup-central` - Set up control center',
-                            '`/disable-central` - Disable control center',
-                            '`/stats` - View listening statistics'
+                            '`/setup-central` - Setup/config center',
+                            '`/disable-central` - Disable center',
+                            '`/clean` - Delete bot messages',
+                            '`/stats` - View statistics'
                         ].join('\n'),
                         inline: true
+                    },
+                    {
+                        name: '🎫 DJ Request Mode',
+                        value: [
+                            '**Enable:** `/setup-central dj-request-mode:True`',
+                            '• Non-DJs use `/play-request` for approval',
+                            '• DJs approve/reject with buttons',
+                            '• Now Playing announces in VC chat'
+                        ].join('\n'),
+                        inline: false
                     },
                     {
                         name: '📡 Supported Platforms',
@@ -79,8 +93,12 @@ module.exports = {
                         inline: false
                     },
                     {
-                        name: '💡 Pro Tip',
-                        value: 'Use `/setup-central` to create a dedicated music channel where users can just type song names!',
+                        name: '💡 Pro Tips',
+                        value: [
+                            '• `/remove search:` shows autocomplete suggestions',
+                            '• Duplicate songs are detected with loop option',
+                            '• Bot auto-disconnects after 3min inactivity'
+                        ].join('\n'),
                         inline: false
                     }
                 )
