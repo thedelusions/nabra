@@ -51,73 +51,109 @@ module.exports = {
 
         try {
             let serverConfig = await Server.findById(guildId);
+            const isUpdate = serverConfig?.centralSetup?.enabled;
             
-            if (serverConfig?.centralSetup?.enabled) {
-                return interaction.editReply({
-                    content: '❌ Central music system is already setup! Use `/disable-central` first to reset.',
-                    ephemeral: true
-                });
-            }
-
             const botMember = interaction.guild.members.me;
             const channel = interaction.channel;
             
-            if (!channel.permissionsFor(botMember).has(['SendMessages', 'EmbedLinks', 'ManageMessages'])) {
-                return interaction.editReply({
-                    content: '❌ I need `Send Messages`, `Embed Links`, and `Manage Messages` permissions in this channel!',
-                    ephemeral: true
-                });
+            // Only check permissions if setting up new or changing channel
+            if (!isUpdate || serverConfig.centralSetup.channelId !== channelId) {
+                if (!channel.permissionsFor(botMember).has(['SendMessages', 'EmbedLinks', 'ManageMessages'])) {
+                    return interaction.editReply({
+                        content: '❌ I need `Send Messages`, `Embed Links`, and `Manage Messages` permissions in this channel!',
+                        ephemeral: true
+                    });
+                }
             }
 
             // Use singleton pattern for multi-server support
             const centralHandler = CentralEmbedHandler.getInstance(client);
-            const embedMessage = await centralHandler.createCentralEmbed(channelId, guildId);
             
-            if (!embedMessage) {
-                return interaction.editReply({
-                    content: '❌ Failed to create central embed!',
-                    ephemeral: true
-                });
+            let embedMessage;
+            let finalChannelId = channelId;
+            
+            if (isUpdate) {
+                // If updating, keep existing embed unless channel changed
+                if (serverConfig.centralSetup.channelId !== channelId) {
+                    // Channel changed - create new embed in new channel
+                    embedMessage = await centralHandler.createCentralEmbed(channelId, guildId);
+                    if (!embedMessage) {
+                        return interaction.editReply({
+                            content: '❌ Failed to create central embed in new channel!',
+                            ephemeral: true
+                        });
+                    }
+                } else {
+                    // Same channel - keep existing embed
+                    finalChannelId = serverConfig.centralSetup.channelId;
+                }
+            } else {
+                // New setup - create embed
+                embedMessage = await centralHandler.createCentralEmbed(channelId, guildId);
+                if (!embedMessage) {
+                    return interaction.editReply({
+                        content: '❌ Failed to create central embed!',
+                        ephemeral: true
+                    });
+                }
             }
 
-            const setupData = {
-                _id: guildId,
-                centralSetup: {
-                    enabled: true,
-                    channelId: channelId,
-                    embedId: embedMessage.id,
-                    vcChannelId: voiceChannel?.id || null,
-                    allowedRoles: allowedRole ? [allowedRole.id] : [],
-                    deleteMessages: true,
-                    djRequestMode: djRequestMode
-                },
-                settings: {
-                    nowPlayingAnnounce: nowPlayingAnnounce
-                }
+            // Build update data - preserve existing values if not provided
+            const updateData = {
+                'centralSetup.enabled': true,
+                'centralSetup.deleteMessages': true,
             };
+            
+            // Only update these if we created a new embed
+            if (embedMessage) {
+                updateData['centralSetup.channelId'] = channelId;
+                updateData['centralSetup.embedId'] = embedMessage.id;
+            }
+            
+            // Update voice channel if provided, or keep existing
+            if (voiceChannel !== null) {
+                updateData['centralSetup.vcChannelId'] = voiceChannel?.id || null;
+            }
+            
+            // Update allowed role if provided, or keep existing
+            if (allowedRole !== null) {
+                updateData['centralSetup.allowedRoles'] = allowedRole ? [allowedRole.id] : [];
+            }
+            
+            // Always update these boolean settings
+            updateData['centralSetup.djRequestMode'] = djRequestMode;
+            updateData['settings.nowPlayingAnnounce'] = nowPlayingAnnounce;
 
             // Handle potential duplicate key errors from stale guildId index
             try {
-                await Server.findByIdAndUpdate(guildId, setupData, { 
+                await Server.findByIdAndUpdate(guildId, { $set: updateData }, { 
                     upsert: true, 
                     new: true 
                 });
             } catch (dbError) {
                 if (dbError.code === 11000) {
                     // Duplicate key - try update without upsert
-                    await Server.findByIdAndUpdate(guildId, setupData);
+                    await Server.findByIdAndUpdate(guildId, { $set: updateData });
                 } else {
                     throw dbError;
                 }
             }
 
+            // Get updated config for display
+            const updatedConfig = await Server.findById(guildId);
+            const displayChannelId = updatedConfig?.centralSetup?.channelId || channelId;
+            const displayVcId = updatedConfig?.centralSetup?.vcChannelId;
+            const displayRoles = updatedConfig?.centralSetup?.allowedRoles || [];
+
             const successEmbed = new EmbedBuilder()
-                .setTitle('✅ Central Music System Setup Complete!')
-                .setDescription(`Central music control has been setup in <#${channelId}>`)
+                .setTitle(isUpdate ? '✅ Central Music System Updated!' : '✅ Central Music System Setup Complete!')
+                .setDescription(isUpdate 
+                    ? `Settings have been updated for <#${displayChannelId}>`
+                    : `Central music control has been setup in <#${displayChannelId}>`)
                 .addFields(
-                    { name: '📍 Channel', value: `<#${channelId}>`, inline: true },
-                    { name: '🔊 Voice Channel', value: voiceChannel ? `<#${voiceChannel.id}>` : 'Not set', inline: true },
-                    { name: '👥 DJ Role', value: allowedRole ? `<@&${allowedRole.id}>` : 'Everyone', inline: true },
+                    { name: '📍 Channel', value: `<#${displayChannelId}>`, inline: true },
+                    { name: '🔊 Voice Channel', value: displayVcId ? `<#${displayVcId}>` : 'Not set', inline: true },
+                    { name: '👥 DJ Role', value: displayRoles.length > 0 ? `<@&${displayRoles[0]}>` : 'Everyone', inline: true },
                     { name: '🎫 DJ Request Mode', value: djRequestMode ? '✅ Enabled' : '❌ Disabled', inline: true },
                     { name: '📢 Now Playing', value: nowPlayingAnnounce ? '✅ Enabled' : '❌ Disabled', inline: true }
                 )
@@ -126,31 +162,34 @@ module.exports = {
 
             await interaction.editReply({ embeds: [successEmbed] });
 
-            setTimeout(async () => {
-                try {
-                    const usageEmbed = new EmbedBuilder()
-                        .setTitle('🎵 Central Music System Active!')
-                        .setDescription(
-                            '• Type any **song name** to play music\n' +
-                            '• Links (YouTube, Spotify) are supported\n' +
-                            '• Other messages will be auto-deleted\n' +
-                            '• Use normal commands (`!play`, `/play`) in other channels\n\n' +
-                            '⚠️ This message will be automatically deleted in 10 seconds!'
-                        )
-                        .setColor(0x2F3767)
-                        .setFooter({ text: 'Enjoy your music!' });
-            
-                    const msg = await channel.send({ embeds: [usageEmbed] });
-            
-                    // Delete after 10 seconds
-                    setTimeout(() => {
-                        msg.delete().catch(() => {});
-                    }, 10000);
-            
-                } catch (error) {
-                    console.error('Error sending usage instructions:', error);
-                }
-            }, 2000);
+            // Only show usage instructions for new setups
+            if (!isUpdate) {
+                setTimeout(async () => {
+                    try {
+                        const usageEmbed = new EmbedBuilder()
+                            .setTitle('🎵 Central Music System Active!')
+                            .setDescription(
+                                '• Type any **song name** to play music\n' +
+                                '• Links (YouTube, Spotify) are supported\n' +
+                                '• Other messages will be auto-deleted\n' +
+                                '• Use normal commands (`!play`, `/play`) in other channels\n\n' +
+                                '⚠️ This message will be automatically deleted in 10 seconds!'
+                            )
+                            .setColor(0x2F3767)
+                            .setFooter({ text: 'Enjoy your music!' });
+                
+                        const msg = await channel.send({ embeds: [usageEmbed] });
+                
+                        // Delete after 10 seconds
+                        setTimeout(() => {
+                            msg.delete().catch(() => {});
+                        }, 10000);
+                
+                    } catch (error) {
+                        console.error('Error sending usage instructions:', error);
+                    }
+                }, 2000);
+            }
             
 
         } catch (error) {
