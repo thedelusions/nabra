@@ -16,9 +16,43 @@ module.exports = {
         .addStringOption(option =>
             option.setName('search')
                 .setDescription('Search for a track by name (partial match)')
+                .setAutocomplete(true)
                 .setRequired(false)
         ),
     securityToken: COMMAND_SECURITY_TOKEN,
+
+    // Handle autocomplete for search option
+    async autocomplete(interaction, client) {
+        const focusedValue = interaction.options.getFocused().toLowerCase();
+        
+        try {
+            const player = client.riffy.players.get(interaction.guild.id);
+            
+            if (!player || player.queue.size === 0) {
+                return interaction.respond([]);
+            }
+
+            const queueArray = Array.from(player.queue);
+            
+            // Filter and map queue to autocomplete choices
+            const choices = queueArray
+                .map((track, index) => ({
+                    name: `${index + 1}. ${track.info.title.substring(0, 80)}${track.info.title.length > 80 ? '...' : ''}`,
+                    value: track.info.title.substring(0, 100)
+                }))
+                .filter(choice => 
+                    focusedValue === '' || 
+                    choice.name.toLowerCase().includes(focusedValue) ||
+                    choice.value.toLowerCase().includes(focusedValue)
+                )
+                .slice(0, 25); // Discord limit is 25 choices
+
+            await interaction.respond(choices);
+        } catch (error) {
+            console.error('Autocomplete error:', error);
+            await interaction.respond([]);
+        }
+    },
 
     async execute(interaction, client) {
         if (!shiva || !shiva.validateCore || !shiva.validateCore()) {

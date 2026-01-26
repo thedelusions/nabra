@@ -16,7 +16,15 @@ module.exports = {
                 .setRequired(false))
         .addRoleOption(option =>
             option.setName('allowed-role')
-                .setDescription('Role allowed to use central system (optional)')
+                .setDescription('Role allowed to use central system / DJ role (optional)')
+                .setRequired(false))
+        .addBooleanOption(option =>
+            option.setName('dj-request-mode')
+                .setDescription('Require DJ approval for non-DJ song requests (default: false)')
+                .setRequired(false))
+        .addBooleanOption(option =>
+            option.setName('now-playing-announce')
+                .setDescription('Announce "Now Playing" in voice chat (default: false)')
                 .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
     securityToken: COMMAND_SECURITY_TOKEN,
@@ -38,6 +46,8 @@ module.exports = {
         const channelId = interaction.channel.id;
         const voiceChannel = interaction.options.getChannel('voice-channel');
         const allowedRole = interaction.options.getRole('allowed-role');
+        const djRequestMode = interaction.options.getBoolean('dj-request-mode') || false;
+        const nowPlayingAnnounce = interaction.options.getBoolean('now-playing-announce') || false;
 
         try {
             let serverConfig = await Server.findById(guildId);
@@ -78,7 +88,11 @@ module.exports = {
                     embedId: embedMessage.id,
                     vcChannelId: voiceChannel?.id || null,
                     allowedRoles: allowedRole ? [allowedRole.id] : [],
-                    deleteMessages: true
+                    deleteMessages: true,
+                    djRequestMode: djRequestMode
+                },
+                settings: {
+                    nowPlayingAnnounce: nowPlayingAnnounce
                 }
             };
 
@@ -103,10 +117,12 @@ module.exports = {
                 .addFields(
                     { name: '📍 Channel', value: `<#${channelId}>`, inline: true },
                     { name: '🔊 Voice Channel', value: voiceChannel ? `<#${voiceChannel.id}>` : 'Not set', inline: true },
-                    { name: '👥 Allowed Role', value: allowedRole ? `<@&${allowedRole.id}>` : 'Everyone', inline: true }
+                    { name: '👥 DJ Role', value: allowedRole ? `<@&${allowedRole.id}>` : 'Everyone', inline: true },
+                    { name: '🎫 DJ Request Mode', value: djRequestMode ? '✅ Enabled' : '❌ Disabled', inline: true },
+                    { name: '📢 Now Playing', value: nowPlayingAnnounce ? '✅ Enabled' : '❌ Disabled', inline: true }
                 )
                 .setColor(0x2F3767)
-                .setFooter({ text: 'Users can now type song names in the channel to play music!' });
+                .setFooter({ text: djRequestMode ? 'Non-DJs must use /play-request for approval' : 'Users can type song names to play music!' });
 
             await interaction.editReply({ embeds: [successEmbed] });
 

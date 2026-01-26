@@ -131,10 +131,65 @@ module.exports = {
                     .then(() => setTimeout(() => {
                         interaction.editReply({ components: [] }).catch(() => {});
                     }, 60000)); // Remove buttons after 60s
+            } else if (result.type === 'duplicate') {
+                // Duplicate track detected - show warning with options
+                const dupInfo = result.duplicateInfo;
+                const locationText = dupInfo.type === 'current' 
+                    ? '**currently playing**' 
+                    : `already in queue at **position #${dupInfo.position}**`;
+                
+                const duplicateRow = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`dup_add_${interaction.user.id}`)
+                            .setLabel('Add Anyway')
+                            .setStyle(ButtonStyle.Primary)
+                            .setEmoji('➕'),
+                        new ButtonBuilder()
+                            .setCustomId(`dup_loop_${interaction.user.id}`)
+                            .setLabel('Loop Current')
+                            .setStyle(ButtonStyle.Secondary)
+                            .setEmoji('🔂'),
+                        new ButtonBuilder()
+                            .setCustomId(`dup_cancel_${interaction.user.id}`)
+                            .setLabel('Cancel')
+                            .setStyle(ButtonStyle.Danger)
+                            .setEmoji('❌')
+                    );
+                
+                const embed = new EmbedBuilder()
+                    .setColor(0xFFA500)
+                    .setTitle('⚠️ Duplicate Track Detected')
+                    .setDescription(
+                        `**${result.track.info.title}** is ${locationText}!\n\n` +
+                        `💡 **Options:**\n` +
+                        `• **Add Anyway** - Add it to the queue again\n` +
+                        `• **Loop Current** - Enable loop for the current track\n` +
+                        `• **Cancel** - Don't add the track`
+                    )
+                    .setFooter({ text: 'This message will expire in 30 seconds' });
+
+                const reply = await interaction.editReply({ embeds: [embed], components: [duplicateRow] });
+                
+                // Store track info for button handler
+                client.pendingDuplicates = client.pendingDuplicates || new Map();
+                client.pendingDuplicates.set(interaction.user.id, {
+                    track: result.track,
+                    player: player,
+                    guildId: interaction.guild.id
+                });
+                
+                // Auto-cleanup after 30 seconds
+                setTimeout(() => {
+                    client.pendingDuplicates?.delete(interaction.user.id);
+                    interaction.editReply({ components: [] }).catch(() => {});
+                }, 30000);
+                
+                return;
             } else {
-                const embed = MusicFormatters.createErrorEmbed('No results found for your query!');
+                const embed = MusicFormatters.createTrackNotFoundEmbed(query);
                 return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 5000));
+                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 10000));
             }
 
         } catch (error) {

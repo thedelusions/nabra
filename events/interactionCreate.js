@@ -99,6 +99,22 @@ module.exports = {
         else if (interaction.isButton()) {
             await handleSecureMusicButton(interaction, client);
         }
+        
+        // Handle autocomplete interactions
+        else if (interaction.isAutocomplete()) {
+            const command = client.slashCommands.get(interaction.commandName);
+            
+            if (!command || !command.autocomplete) {
+                return;
+            }
+            
+            try {
+                await command.autocomplete(interaction, client);
+            } catch (error) {
+                console.error('Autocomplete error:', error);
+                await interaction.respond([]).catch(() => {});
+            }
+        }
     }
 };
 
@@ -106,6 +122,16 @@ async function handleSecureMusicButton(interaction, client) {
     // Handle changelog approval buttons (owner only, works in DMs)
     if (interaction.customId.startsWith('changelog_')) {
         return handleChangelogButton(interaction, client);
+    }
+    
+    // Handle duplicate track buttons
+    if (interaction.customId.startsWith('dup_')) {
+        return handleDuplicateButton(interaction, client);
+    }
+    
+    // Handle DJ request buttons
+    if (interaction.customId.startsWith('djreq_')) {
+        return handleDJRequestButton(interaction, client);
     }
     
     if (interaction.customId === 'music_support') return;
@@ -571,6 +597,177 @@ async function handleChangelogButton(interaction, client) {
         console.error('Error handling changelog button:', error);
         await interaction.reply({
             content: '❌ An error occurred while processing your request.',
+            ephemeral: true
+        }).catch(() => {});
+    }
+}
+
+/**
+ * Handle duplicate track buttons (Add Anyway, Loop, Cancel)
+ */
+async function handleDuplicateButton(interaction, client) {
+    const [prefix, action, userId] = interaction.customId.split('_');
+    
+    // Only the original user can interact
+    if (interaction.user.id !== userId) {
+        return interaction.reply({
+            content: '❌ Only the person who requested this can use these buttons!',
+            ephemeral: true
+        });
+    }
+    
+    const pendingData = client.pendingDuplicates?.get(userId);
+    
+    if (!pendingData) {
+        return interaction.update({
+            content: '⏰ This request has expired.',
+            embeds: [],
+            components: []
+        });
+    }
+    
+    const { track, player, guildId } = pendingData;
+    client.pendingDuplicates.delete(userId);
+    
+    try {
+        switch (action) {
+            case 'add':
+                // Add the track anyway
+                player.queue.add(track);
+                
+                if (!player.playing && !player.paused) {
+                    await player.play();
+                }
+                
+                await interaction.update({
+                    content: `✅ Added **${track.info.title}** to the queue anyway!`,
+                    embeds: [],
+                    components: []
+                });
+                break;
+                
+            case 'loop':
+                // Enable loop for current track
+                player.setLoop('track');
+                
+                await interaction.update({
+                    content: `🔂 Enabled **track loop** for the current song!\nThe duplicate was not added.`,
+                    embeds: [],
+                    components: []
+                });
+                
+                // Update central embed
+                const CentralEmbedHandler = require('../utils/centralEmbed');
+                const centralHandler = CentralEmbedHandler.getInstance(client);
+                if (player.current) {
+                    await centralHandler.updateCentralEmbed(guildId, {
+                        title: player.current.info.title,
+                        author: player.current.info.author,
+                        duration: player.current.info.length,
+                        thumbnail: player.current.info.thumbnail,
+                        requester: player.current.info.requester,
+                        paused: player.paused,
+                        volume: player.volume,
+                        loop: 'track',
+                        queueLength: player.queue.size
+                    });
+                }
+                break;
+                
+            case 'cancel':
+                await interaction.update({
+                    content: '❌ Cancelled - track was not added.',
+                    embeds: [],
+                    components: []
+                });
+                break;
+        }
+        
+        // Auto-delete message after 5 seconds
+        setTimeout(() => {
+            interaction.deleteReply().catch(() => {});
+        }, 5000);
+        
+    } catch (error) {
+        console.error('Error handling duplicate button:', error);
+        await interaction.update({
+            content: '❌ An error occurred.',
+            embeds: [],
+            components: []
+        }).catch(() => {});
+    }
+}
+
+/**
+ * Handle DJ request approve/reject buttons
+ */
+async function handleDJRequestButton(interaction, client) {
+    const [prefix, action, requestId] = interaction.customId.split('_');
+    
+    const requestData = client.pendingDJRequests?.get(requestId);
+    
+    if (!requestData) {
+        return interaction.reply({
+            content: '⏰ This request has expired or was already processed.',
+            ephemeral: true
+        });
+    }
+    
+    const { track, requester, player, guildId, allowedRoleMembers } = requestData;
+    
+    // Check if user is one of the allowed role members in the VC
+    if (!allowedRoleMembers.includes(interaction.user.id)) {
+        return interaction.reply({
+            content: '❌ Only DJs in the voice channel can approve/reject requests!',
+            ephemeral: true
+        });
+    }
+    
+    client.pendingDJRequests.delete(requestId);
+    
+    try {
+        if (action === 'approve') {
+            // Add the track to queue
+            player.queue.add(track);
+            
+            if (!player.playing && !player.paused) {
+                await player.play();
+            }
+            
+            await interaction.update({
+                content: `✅ **Request Approved** by ${interaction.user}\n\n🎵 **${track.info.title}** requested by <@${requester.id}> has been added to the queue!`,
+                embeds: [],
+                components: []
+            });
+            
+            // Notify requester
+            try {
+                const requesterUser = await client.users.fetch(requester.id);
+                await requesterUser.send({
+                    content: `✅ Your song request **${track.info.title}** was approved and added to the queue!`
+                }).catch(() => {});
+            } catch (e) {}
+            
+        } else if (action === 'reject') {
+            await interaction.update({
+                content: `❌ **Request Rejected** by ${interaction.user}\n\n🎵 **${track.info.title}** requested by <@${requester.id}> was not added.`,
+                embeds: [],
+                components: []
+            });
+            
+            // Notify requester
+            try {
+                const requesterUser = await client.users.fetch(requester.id);
+                await requesterUser.send({
+                    content: `❌ Your song request **${track.info.title}** was rejected by the DJ.`
+                }).catch(() => {});
+            } catch (e) {}
+        }
+        
+    } catch (error) {
+        console.error('Error handling DJ request button:', error);
+        await interaction.reply({
+            content: '❌ An error occurred while processing the request.',
             ephemeral: true
         }).catch(() => {});
     }

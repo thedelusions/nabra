@@ -9,7 +9,8 @@ const serverSchema = new mongoose.Schema({
         channelId: String,
         embedId: String, 
         vcChannelId: String,
-        allowedRoles: [String]
+        allowedRoles: [String],
+        djRequestMode: Boolean // When true, users without allowed role must request songs
     },
     
 
@@ -26,7 +27,9 @@ const serverSchema = new mongoose.Schema({
         autoplay: Boolean,
         defaultVolume: Number,
         djRole: String,
-        alwaysOn: Boolean // 24/7 mode - never disconnect
+        alwaysOn: Boolean, // 24/7 mode - never disconnect
+        nowPlayingAnnounce: Boolean, // Announce now playing in VC text chat
+        duplicateWarning: Boolean // Warn when adding duplicate songs
     }
 });
 

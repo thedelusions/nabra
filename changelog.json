@@ -1,23 +1,29 @@
 {
-    "currentVersion": "1.2.0",
-    "lastAnnouncedVersion": "1.1.0",
+    "currentVersion": "1.3.0",
+    "lastAnnouncedVersion": "1.2.0",
     "supportServerId": "1181577122456805467",
     "announcementChannelId": "1465228349139058761",
     "changes": [
         {
-            "version": "1.2.0",
+            "version": "1.3.0",
             "date": "",
-            "title": "🎉 Queue Pagination & Remove Improvements",
-            "description": "Major improvements to queue management and track removal!",
+            "title": "🎉 Major Update - DJ Mode, Queue Improvements & More!",
+            "description": "Packed with new features for better music control and queue management!",
             "features": [
-                "**Queue Pagination** - Navigate through large queues with  <:previous:1464824227827023891> <:rewind:1464826397401940071> <:rewind1:1464826294494695565> <:next:1464824274186666139>  buttons",
-                "**Search Remove** - Remove tracks by name: `/remove search:never gonna`",
-                "**Control Center Queue** - Paginated queue view from the control panel"
+                "🎫 **DJ Request Mode** - Non-DJs must request songs for approval (`/play-request`, `n!pr`)",
+                "🔍 **Remove Autocomplete** - See queue suggestions when typing `/remove search:`",
+                "🧹 **Clean Command** - `/clean` to delete bot messages in a channel",
+                "⚠️ **Duplicate Detection** - Warns when adding songs already in queue, suggests loop",
+                "📢 **Now Playing Announcements** - Auto-post to VC text chat when songs start"
             ],
-            "fixes": [],
+            "fixes": [
+                "Voice channel permission checks for Control Center buttons"
+            ],
             "improvements": [
-                "Better queue display with page indicators",
-                "Track search matches title AND artist name"
+                "Better 'track not found' messages with helpful suggestions",
+                "Track search matches both title AND artist name",
+                "DJ approval mentions individual DJs in VC (not the role)",
+                "Auto-disconnect after 3 minutes of inactivity"
             ],
             "announced": false
         }

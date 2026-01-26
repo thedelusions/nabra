@@ -8,6 +8,120 @@ class PlayerHandler {
         this.statsService = client.statsService;
         this.disconnectTimeouts = new Map(); // Track disconnect timers
         this.DISCONNECT_DELAY = 3 * 60 * 1000; // 3 minutes in milliseconds
+        this.nowPlayingMessages = new Map(); // Track now playing messages to delete old ones
+    }
+
+    /**
+     * Send Now Playing announcement to the voice channel's linked text chat
+     */
+    async sendNowPlayingAnnouncement(player, track, thumbnail) {
+        try {
+            const guild = this.client.guilds.cache.get(player.guildId);
+            if (!guild) return;
+
+            // Get the voice channel to find its linked text chat
+            const voiceChannel = guild.channels.cache.get(player.voiceChannel);
+            if (!voiceChannel) return;
+
+            // Check if server has announcements enabled (default: false)
+            const Server = require('../models/Server');
+            const serverConfig = await Server.findById(player.guildId);
+            if (!serverConfig?.settings?.nowPlayingAnnounce) return;
+
+            // Get the text channel associated with the voice channel
+            // Discord voice channels can have a text chat inside them
+            let textChannel = null;
+            
+            // First try: Voice channel's own text chat (for voice channels with text)
+            if (voiceChannel.type === 2) { // GuildVoice
+                textChannel = voiceChannel;
+            }
+            
+            // Fallback: Use the player's text channel
+            if (!textChannel && player.textChannel) {
+                textChannel = guild.channels.cache.get(player.textChannel);
+            }
+
+            if (!textChannel) return;
+
+            const { EmbedBuilder } = require('discord.js');
+            
+            // Format duration
+            const duration = track.info.length || 0;
+            const minutes = Math.floor(duration / 60000);
+            const seconds = Math.floor((duration % 60000) / 1000);
+            const durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            const embed = new EmbedBuilder()
+                .setColor(0x9966FF)
+                .setAuthor({ name: '🎵 Now Playing', iconURL: this.client.user.displayAvatarURL() })
+                .setTitle(track.info.title || 'Unknown Track')
+                .setURL(track.info.uri || null)
+                .setDescription(`**Artist:** ${track.info.author || 'Unknown'}\n**Duration:** \`${durationStr}\``)
+                .setFooter({ text: `Requested by ${track.info.requester?.username || 'Unknown'}` })
+                .setTimestamp();
+
+            if (thumbnail) {
+                embed.setThumbnail(thumbnail);
+            }
+
+            // Delete previous now playing message for this guild
+            const previousMsg = this.nowPlayingMessages.get(player.guildId);
+            if (previousMsg) {
+                previousMsg.delete().catch(() => {});
+            }
+
+            const msg = await textChannel.send({ embeds: [embed] });
+            this.nowPlayingMessages.set(player.guildId, msg);
+
+            // Auto-delete after 30 seconds
+            setTimeout(() => {
+                msg.delete().catch(() => {});
+                if (this.nowPlayingMessages.get(player.guildId) === msg) {
+                    this.nowPlayingMessages.delete(player.guildId);
+                }
+            }, 30000);
+
+        } catch (error) {
+            console.error('Now playing announcement error:', error.message);
+        }
+    }
+
+    /**
+     * Check if a track already exists in the queue or is currently playing
+     * Returns the duplicate track info if found
+     */
+    checkDuplicate(player, track) {
+        if (!player || !track || !track.info) return null;
+
+        const trackUri = track.info.uri;
+        const trackTitle = track.info.title?.toLowerCase();
+        const trackIdentifier = track.info.identifier;
+
+        // Check current track
+        if (player.current) {
+            const current = player.current.info;
+            if (current.uri === trackUri || 
+                current.identifier === trackIdentifier ||
+                current.title?.toLowerCase() === trackTitle) {
+                return { type: 'current', track: player.current };
+            }
+        }
+
+        // Check queue
+        for (let i = 0; i < player.queue.size; i++) {
+            const queueTrack = player.queue[i];
+            if (!queueTrack || !queueTrack.info) continue;
+            
+            const qInfo = queueTrack.info;
+            if (qInfo.uri === trackUri || 
+                qInfo.identifier === trackIdentifier ||
+                qInfo.title?.toLowerCase() === trackTitle) {
+                return { type: 'queue', track: queueTrack, position: i + 1 };
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -107,6 +221,17 @@ class PlayerHandler {
                 console.log(`✅ Track loaded from ${source}: ${track.info.title}`);
 
                 track.info.requester = requester;
+                
+                // Check for duplicate
+                const duplicate = this.checkDuplicate(player, track);
+                if (duplicate) {
+                    return {
+                        type: 'duplicate',
+                        track: track,
+                        duplicateInfo: duplicate
+                    };
+                }
+
                 player.queue.add(track);
 
                 if (!player.playing && !player.paused) {
@@ -246,6 +371,9 @@ class PlayerHandler {
                         loop: player.loop || 'none',
                         queueLength: player.queue.size || 0
                     });
+
+                    // Send Now Playing announcement to voice channel's text chat
+                    await this.sendNowPlayingAnnouncement(player, track, thumbnail);
 
                     if (this.statsService) {
                         await this.statsService.startSession(player, track);

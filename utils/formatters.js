@@ -199,6 +199,51 @@ class MusicFormatters {
     }
 
     /**
+     * Create a track not found embed with helpful suggestions
+     */
+    static createTrackNotFoundEmbed(query) {
+        const suggestions = [];
+        
+        // Analyze the query and provide contextual suggestions
+        if (query.length < 3) {
+            suggestions.push('Try a longer search term');
+        }
+        
+        if (!query.includes(' ')) {
+            suggestions.push('Try adding the artist name: `song name - artist`');
+        }
+        
+        if (query.includes('https://')) {
+            suggestions.push('The link might be unavailable or restricted');
+            suggestions.push('Try searching by song name instead');
+        } else {
+            suggestions.push('Check your spelling');
+            suggestions.push('Try the official song title');
+            suggestions.push('Use a YouTube/Spotify link directly');
+        }
+
+        const embed = new EmbedBuilder()
+            .setColor('#FF6B6B')
+            .setTitle('🔍 No Results Found')
+            .setDescription(
+                `Could not find: **${query.substring(0, 100)}${query.length > 100 ? '...' : ''}**\n\n` +
+                `**💡 Suggestions:**\n${suggestions.map(s => `• ${s}`).join('\n')}`
+            )
+            .addFields({
+                name: '📝 Examples',
+                value: 
+                    '• `Never Gonna Give You Up - Rick Astley`\n' +
+                    '• `lofi hip hop beats`\n' +
+                    '• `https://youtube.com/watch?v=...`',
+                inline: false
+            })
+            .setFooter({ text: 'Tip: More specific searches work better!' })
+            .setTimestamp();
+
+        return embed;
+    }
+
+    /**
      * Create a simple info embed
      */
     static createInfoEmbed(message, color = '#3498DB') {
