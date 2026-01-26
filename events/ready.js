@@ -12,6 +12,7 @@ const SystemConfigurationManager = require('../config');
 const FileSystemOperationalInterface = require('fs');
 const SystemPathResolutionUtility = require('path');
 const CentralEmbedManagementSystem = require('../utils/centralEmbed');
+const ChangelogService = require('../utils/changelogService');
 
 /**
  * Discord Client Ready Event Configuration
@@ -51,7 +52,8 @@ class ClientInitializationManager {
             audioSystemReady: false,
             commandsRegistered: false,
             embedSystemReady: false,
-            statusSystemReady: false
+            statusSystemReady: false,
+            changelogChecked: false
         };
     }
     
@@ -73,6 +75,8 @@ class ClientInitializationManager {
             await this.initializeEmbedManagementSubsystem();
 
             await this.activateStatusManagementSystem();
+
+            await this.checkPendingChangelogs();
 
             this.validateStartupSequenceCompletion();
             
@@ -149,6 +153,28 @@ class ClientInitializationManager {
             console.error('❌ Status system initialization failed:', statusSystemException);
             // Non-critical failure - continue startup
             this.initializationStatus.statusSystemReady = false;
+        }
+    }
+
+    /**
+     * Check for pending changelog announcements
+     * 
+     * Sends approval request to bot owner if new version detected
+     */
+    async checkPendingChangelogs() {
+        try {
+            const changelogService = new ChangelogService(this.clientRuntimeInstance);
+            
+            if (changelogService.hasPendingAnnouncement()) {
+                console.log('📋 New changelog detected, sending approval request to owner...');
+                const ownerIds = SystemConfigurationManager.bot?.ownerIds || [];
+                await changelogService.sendOwnerApproval(ownerIds);
+            }
+            
+            this.initializationStatus.changelogChecked = true;
+        } catch (changelogException) {
+            console.error('❌ Changelog check failed:', changelogException);
+            this.initializationStatus.changelogChecked = false;
         }
     }
     

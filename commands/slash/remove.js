@@ -11,7 +11,12 @@ module.exports = {
             option.setName('position')
                 .setDescription('Position in queue (1, 2, 3...)')
                 .setMinValue(1)
-                .setRequired(true)
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName('search')
+                .setDescription('Search for a track by name (partial match)')
+                .setRequired(false)
         ),
     securityToken: COMMAND_SECURITY_TOKEN,
 
@@ -43,16 +48,69 @@ module.exports = {
             }
 
             const position = interaction.options.getInteger('position');
-            if (position > conditions.queueLength) {
-                const embed = new EmbedBuilder().setDescription(`❌ Invalid position! Queue has only ${conditions.queueLength} songs.`);
+            const searchQuery = interaction.options.getString('search');
+            
+            // User must provide either position or search
+            if (!position && !searchQuery) {
+                const embed = new EmbedBuilder().setDescription('❌ Please provide either a position number or a search term!\nExample: `/remove position:3` or `/remove search:never gonna`');
                 return interaction.editReply({ embeds: [embed] })
-                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                    .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 5000));
             }
 
             const player = conditions.player;
-            const removedTrack = player.queue.remove(position - 1);
+            let removedTrack;
+            let removedPosition;
+            
+            if (searchQuery) {
+                // Search for track by name (case-insensitive partial match)
+                const queueArray = Array.from(player.queue);
+                const searchLower = searchQuery.toLowerCase();
+                
+                // Find all matching tracks
+                const matches = queueArray
+                    .map((track, index) => ({ track, index }))
+                    .filter(({ track }) => 
+                        track.info.title.toLowerCase().includes(searchLower) ||
+                        track.info.author.toLowerCase().includes(searchLower)
+                    );
+                
+                if (matches.length === 0) {
+                    const embed = new EmbedBuilder().setDescription(`❌ No tracks found matching: **${searchQuery}**`);
+                    return interaction.editReply({ embeds: [embed] })
+                        .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                }
+                
+                if (matches.length > 1) {
+                    // Show all matches and let user know to be more specific or use position
+                    const matchList = matches.slice(0, 10).map(({ track, index }) => 
+                        `\`${index + 1}.\` **${track.info.title.substring(0, 50)}${track.info.title.length > 50 ? '...' : ''}**`
+                    ).join('\n');
+                    
+                    const moreText = matches.length > 10 ? `\n... and ${matches.length - 10} more` : '';
+                    
+                    const embed = new EmbedBuilder()
+                        .setDescription(`🔍 Found ${matches.length} matching tracks:\n\n${matchList}${moreText}\n\n💡 **Tip:** Use \`/remove position:X\` to remove a specific track.`)
+                        .setColor('#FFA500');
+                    return interaction.editReply({ embeds: [embed] })
+                        .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 10000));
+                }
+                
+                // Single match - remove it
+                removedPosition = matches[0].index + 1;
+                removedTrack = player.queue.remove(matches[0].index);
+            } else {
+                // Remove by position
+                if (position > conditions.queueLength) {
+                    const embed = new EmbedBuilder().setDescription(`❌ Invalid position! Queue has only ${conditions.queueLength} songs.`);
+                    return interaction.editReply({ embeds: [embed] })
+                        .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
+                }
+                
+                removedPosition = position;
+                removedTrack = player.queue.remove(position - 1);
+            }
 
-            const embed = new EmbedBuilder().setDescription(`🗑️ Removed: **${removedTrack.info.title}**`);
+            const embed = new EmbedBuilder().setDescription(`🗑️ Removed #${removedPosition}: **${removedTrack.info.title}**`);
             return interaction.editReply({ embeds: [embed] })
                 .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
 

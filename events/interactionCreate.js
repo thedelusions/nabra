@@ -1,5 +1,8 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const shiva = require('../shiva');
+
+// Store active pagination collectors for queue
+const queuePaginationCollectors = new Map();
 
 // Helper functions for music buttons
 function formatTime(ms) {
@@ -100,6 +103,11 @@ module.exports = {
 };
 
 async function handleSecureMusicButton(interaction, client) {
+    // Handle changelog approval buttons (owner only, works in DMs)
+    if (interaction.customId.startsWith('changelog_')) {
+        return handleChangelogButton(interaction, client);
+    }
+    
     if (interaction.customId === 'music_support') return;
     
     const ConditionChecker = require('../utils/checks');
@@ -270,16 +278,103 @@ async function handleSecureMusicButton(interaction, client) {
                     });
                 }
                 
-                const queueList = player.queue.map((track, index) => 
-                    `\`${index + 1}.\` ${track.info.title.substring(0, 40)}${track.info.title.length > 40 ? '...' : ''}`
-                ).slice(0, 10).join('\n');
+                const songsPerPage = 10;
+                const totalQueuePages = Math.ceil(player.queue.size / songsPerPage);
+                let queueCurrentPage = 1;
                 
-                const moreText = player.queue.size > 10 ? `\n... and ${player.queue.size - 10} more songs` : '';
+                const createQueueContent = (page) => {
+                    const startIdx = (page - 1) * songsPerPage;
+                    const endIdx = startIdx + songsPerPage;
+                    const queueTracks = Array.from(player.queue).slice(startIdx, endIdx);
+                    
+                    const queueList = queueTracks.map((track, index) => 
+                        `\`${startIdx + index + 1}.\` ${track.info.title.substring(0, 40)}${track.info.title.length > 40 ? '...' : ''}`
+                    ).join('\n');
+                    
+                    return `📜 **Queue (${player.queue.size} songs)**\n${queueList}\n\n📄 Page ${page}/${totalQueuePages}`;
+                };
+                
+                const createQueueButtons = (page) => {
+                    return new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId('queue_page_first')
+                                .setEmoji('<:music_previous:1464824274186666139>')
+                                .setStyle(ButtonStyle.Secondary)
+                                .setDisabled(page === 1),
+                            new ButtonBuilder()
+                                .setCustomId('queue_page_prev')
+                                .setEmoji('<:rewind:1464826397401940071>')
+                                .setStyle(ButtonStyle.Secondary)
+                                .setDisabled(page === 1),
+                            new ButtonBuilder()
+                                .setCustomId('queue_page_info')
+                                .setLabel(`${page}/${totalQueuePages}`)
+                                .setStyle(ButtonStyle.Primary)
+                                .setDisabled(true),
+                            new ButtonBuilder()
+                                .setCustomId('queue_page_next')
+                                .setEmoji('<:rewind1:1464826294494695565>')
+                                .setStyle(ButtonStyle.Secondary)
+                                .setDisabled(page === totalQueuePages),
+                            new ButtonBuilder()
+                                .setCustomId('queue_page_last')
+                                .setEmoji('<:next:1464824274186666139>')
+                                .setStyle(ButtonStyle.Secondary)
+                                .setDisabled(page === totalQueuePages)
+                        );
+                };
+                
+                const queueComponents = totalQueuePages > 1 ? [createQueueButtons(1)] : [];
                 
                 await interaction.reply({
-                    content: `📜 **Queue (${player.queue.size} songs)**\n${queueList}${moreText}`,
+                    content: createQueueContent(1),
+                    components: queueComponents,
                     ephemeral: true
                 });
+                
+                // Only set up collector if multiple pages
+                if (totalQueuePages > 1) {
+                    // Clean up existing collector for this user
+                    const existingCollector = queuePaginationCollectors.get(interaction.user.id);
+                    if (existingCollector) {
+                        existingCollector.stop('new_command');
+                    }
+                    
+                    const queueMessage = await interaction.fetchReply();
+                    const queueCollector = queueMessage.createMessageComponentCollector({
+                        filter: (i) => i.user.id === interaction.user.id && i.customId.startsWith('queue_page_'),
+                        time: 60000
+                    });
+                    
+                    queuePaginationCollectors.set(interaction.user.id, queueCollector);
+                    
+                    queueCollector.on('collect', async (i) => {
+                        switch (i.customId) {
+                            case 'queue_page_first':
+                                queueCurrentPage = 1;
+                                break;
+                            case 'queue_page_prev':
+                                queueCurrentPage = Math.max(1, queueCurrentPage - 1);
+                                break;
+                            case 'queue_page_next':
+                                queueCurrentPage = Math.min(totalQueuePages, queueCurrentPage + 1);
+                                break;
+                            case 'queue_page_last':
+                                queueCurrentPage = totalQueuePages;
+                                break;
+                        }
+                        
+                        await i.update({
+                            content: createQueueContent(queueCurrentPage),
+                            components: [createQueueButtons(queueCurrentPage)]
+                        }).catch(() => {});
+                    });
+                    
+                    queueCollector.on('end', () => {
+                        queuePaginationCollectors.delete(interaction.user.id);
+                    });
+                }
                 break;
                 
             case 'shuffle':
@@ -381,6 +476,101 @@ async function handleSecureMusicButton(interaction, client) {
         console.error('Error handling secure music button:', error);
         await interaction.reply({
             content: '❌ An error occurred while processing your request',
+            ephemeral: true
+        }).catch(() => {});
+    }
+}
+
+/**
+ * Handle changelog approval/rejection buttons (owner only)
+ */
+async function handleChangelogButton(interaction, client) {
+    const config = require('../config');
+    const ChangelogService = require('../utils/changelogService');
+    
+    // Check if user is bot owner
+    const ownerIds = config.bot?.ownerIds || [];
+    if (!ownerIds.includes(interaction.user.id)) {
+        return interaction.reply({
+            content: '❌ Only the bot owner can manage changelog announcements.',
+            ephemeral: true
+        });
+    }
+    
+    const changelogService = new ChangelogService(client);
+    const [action, type, version] = interaction.customId.split('_');
+    
+    try {
+        switch (type) {
+            case 'approve':
+                await interaction.deferUpdate();
+                const announced = await changelogService.announceChangelog(version);
+                
+                if (announced) {
+                    await interaction.editReply({
+                        content: `✅ **Changelog v${version} announced successfully!**\n\nThe update has been posted to the announcement channel.`,
+                        embeds: [],
+                        components: []
+                    });
+                } else {
+                    await interaction.editReply({
+                        content: `❌ Failed to announce changelog v${version}. Check the logs for details.`,
+                        embeds: interaction.message.embeds,
+                        components: []
+                    });
+                }
+                break;
+                
+            case 'reject':
+                await interaction.deferUpdate();
+                changelogService.skipChangelog(version);
+                
+                await interaction.editReply({
+                    content: `<:next:1464824274186666139> **Changelog v${version} skipped.**\n\nThis update won't be announced. You can manually announce later if needed.`,
+                    embeds: [],
+                    components: []
+                });
+                break;
+                
+            case 'preview':
+                // Send a preview to the announcement channel without marking as announced
+                await interaction.deferReply({ ephemeral: true });
+                
+                const changelog = changelogService.loadChangelog();
+                const change = changelog.changes.find(c => c.version === version);
+                
+                if (!change) {
+                    return interaction.editReply({
+                        content: `❌ Changelog v${version} not found.`
+                    });
+                }
+                
+                try {
+                    const channel = await client.channels.fetch(changelog.announcementChannelId);
+                    const embed = changelogService.createChangelogEmbed(change, false);
+                    
+                    const previewMsg = await channel.send({
+                        content: '👁️ **[PREVIEW - Will be deleted in 30 seconds]**',
+                        embeds: [embed]
+                    });
+                    
+                    // Delete preview after 30 seconds
+                    setTimeout(() => previewMsg.delete().catch(() => {}), 30000);
+                    
+                    await interaction.editReply({
+                        content: `✅ Preview sent to <#${changelog.announcementChannelId}>!\n\nIt will be automatically deleted in 30 seconds.`
+                    });
+                } catch (error) {
+                    await interaction.editReply({
+                        content: `❌ Failed to send preview: ${error.message}`
+                    });
+                }
+                break;
+        }
+    } catch (error) {
+        console.error('Error handling changelog button:', error);
+        await interaction.reply({
+            content: '❌ An error occurred while processing your request.',
             ephemeral: true
         }).catch(() => {});
     }

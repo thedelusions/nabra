@@ -1,0 +1,25 @@
+{
+    "currentVersion": "1.2.0",
+    "lastAnnouncedVersion": "1.1.0",
+    "supportServerId": "1181577122456805467",
+    "announcementChannelId": "1465228349139058761",
+    "changes": [
+        {
+            "version": "1.2.0",
+            "date": "",
+            "title": "🎉 Queue Pagination & Remove Improvements",
+            "description": "Major improvements to queue management and track removal!",
+            "features": [
+                "**Queue Pagination** - Navigate through large queues with '<:music_previous:1464824274186666139>''<:rewind:1464826397401940071>''<:rewind1:1464826294494695565>''<:next:1464824274186666139>' buttons",
+                "**Search Remove** - Remove tracks by name: `/remove search:never gonna`",
+                "**Control Center Queue** - Paginated queue view from the control panel"
+            ],
+            "fixes": [],
+            "improvements": [
+                "Better queue display with page indicators",
+                "Track search matches title AND artist name"
+            ],
+            "announced": false
+        }
+    ]
+}
