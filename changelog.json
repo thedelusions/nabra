@@ -10,7 +10,7 @@
             "title": "🎉 Queue Pagination & Remove Improvements",
             "description": "Major improvements to queue management and track removal!",
             "features": [
-                "**Queue Pagination** - Navigate through large queues with  <:music_previous:1464824274186666139> <:rewind:1464826397401940071> <:rewind1:1464826294494695565> <:next:1464824274186666139>  buttons",
+                "**Queue Pagination** - Navigate through large queues with  <:previous:1464824227827023891> <:rewind:1464826397401940071> <:rewind1:1464826294494695565> <:next:1464824274186666139>  buttons",
                 "**Search Remove** - Remove tracks by name: `/remove search:never gonna`",
                 "**Control Center Queue** - Paginated queue view from the control panel"
             ],
