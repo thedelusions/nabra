@@ -1,9 +1,27 @@
 {
-    "currentVersion": "1.3.0",
+    "currentVersion": "1.3.1",
     "lastAnnouncedVersion": "1.3.0",
     "supportServerId": "1181577122456805467",
     "announcementChannelId": "1465228349139058761",
     "changes": [
+        {
+            "version": "1.3.1",
+            "date": "2026-01-27",
+            "title": "🔧 Queue & Settings Improvements",
+            "description": "Better queue management and easier configuration!",
+            "features": [],
+            "fixes": [
+                "Queue now shows fresh data - completed songs removed on page navigation",
+                "Shuffled queue displays in correct playback order"
+            ],
+            "improvements": [
+                "📜 `/queue` message is now permanent (no auto-delete)",
+                "⚙️ `/setup-central` works as config - update settings without disabling first",
+                "⏱️ Queue pagination timeout extended to 2 minutes",
+                "🎨 New pagination button emojis"
+            ],
+            "announced": false
+        },
         {
             "version": "1.3.0",
             "date": "2026-01-26",

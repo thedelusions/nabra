@@ -51,14 +51,14 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor('#FFA500')
-                .setTitle('⏭️ Skipped')
+                .setTitle('<:next:1464824274186666139> Skipped')
                 .setDescription(`**${trackTitle}**`)
                 .setTimestamp();
 
             if (nextTrack) {
                 const sourceEmoji = MusicFormatters.getSourceEmoji(nextTrack.info.sourceName);
                 embed.addFields({
-                    name: '▶️ Up Next',
+                    name: '<:play:1464823386780864563>  Up Next',
                     value: `${sourceEmoji} ${nextTrack.info.title}`,
                     inline: false
                 });

@@ -53,9 +53,9 @@ class MusicFormatters {
      * Get status emoji
      */
     static getStatusEmoji(playing, paused) {
-        if (paused) return '⏸️';
-        if (playing) return '▶️';
-        return '⏹️';
+        if (paused) return '<:pause:1464823417248415829>';
+        if (playing) return '<:play:1464823386780864563>';
+        return '<:stop:1464823585146273967>';
     }
 
     /**
@@ -73,7 +73,7 @@ class MusicFormatters {
             .addFields(
                 { name: '🎤 Artist', value: track.info.author || 'Unknown', inline: true },
                 { name: '⏱️ Duration', value: duration, inline: true },
-                { name: '🔊 Source', value: track.info.sourceName || 'Unknown', inline: true }
+                { name: '<:volume:1464838911439409305> Source', value: track.info.sourceName || 'Unknown', inline: true }
             )
             .setFooter({ 
                 text: `Requested by ${track.info.requester.username}${queuePosition > 0 ? ` • Position in queue: ${queuePosition}` : ''}`,
@@ -95,7 +95,7 @@ class MusicFormatters {
     static createPlaylistAddedEmbed(playlistInfo, trackCount, requester, firstTrack = null) {
         const embed = new EmbedBuilder()
             .setColor('#2F3767')
-            .setTitle('📚 Playlist Added to Queue')
+            .setTitle('<:queue:1464823466359521331> Playlist Added to Queue')
             .setDescription(`**${playlistInfo.name || 'Unknown Playlist'}**`)
             .addFields(
                 { name: '🎵 Tracks Added', value: `${trackCount} songs`, inline: true },
@@ -110,7 +110,7 @@ class MusicFormatters {
         // Add first track info if available
         if (firstTrack && firstTrack.info) {
             embed.addFields({
-                name: '▶️ First Track',
+                name: '<:play:1464823386780864563> First Track',
                 value: `${firstTrack.info.title} - ${firstTrack.info.author}`,
                 inline: false
             });
@@ -144,7 +144,7 @@ class MusicFormatters {
                 { name: '⏱️ Duration', value: duration, inline: true },
                 { name: '<:volume:1464838911439409305> Volume', value: `${player.volume || 50}%`, inline: true },
                 { name: '📊 Progress', value: `${progress}\n${position} / ${duration}`, inline: false },
-                { name: '🔁 Loop', value: `${loopEmoji} ${player.loop || 'Off'}`, inline: true },
+                { name: '<:repeat:1464823558126698602> Loop', value: `${loopEmoji} ${player.loop || 'Off'}`, inline: true },
                 { name: '<:queue:1464823466359521331> Queue', value: `${player.queue.size} songs`, inline: true },
                 { name: '⚡ Status', value: `${statusEmoji} ${player.paused ? 'Paused' : 'Playing'}`, inline: true }
             )

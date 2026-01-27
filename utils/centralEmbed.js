@@ -107,9 +107,9 @@ class CentralEmbedHandler {
                         name: '🚀 Features',
                         value: [
                             '• 🎵 High quality audio',
-                            '• 📜 Queue management', 
-                            '• 🔁 Loop & shuffle modes',
-                            '• 🎛️ Volume controls',
+                            '• <:queue:1464823466359521331> Queue management', 
+                            '• <:repeat:1464823558126698602> Loop & shuffle modes',
+                            '• <:volume:1464838911439409305> Volume controls',
                             '• ⚡ Lightning fast search'
                         ].join('\n'),
                         inline: true
@@ -266,7 +266,7 @@ class CentralEmbedHandler {
             let embed, components = [];
             
             if (trackInfo) {
-                const statusEmoji = trackInfo.paused ? '⏸️' : '▶️';
+                const statusEmoji = trackInfo.paused ? '<:pause:1464823417248415829>' : '<:play:1464823386780864563>';
                 const statusText = trackInfo.paused ? 'Paused' : 'Now Playing';
                 const loopEmoji = this.getLoopEmoji(trackInfo.loop);
                 const embedColor = trackInfo.paused ? 0xFFA500 : 0x2F3767;
@@ -285,7 +285,7 @@ class CentralEmbedHandler {
                         '',
                         `⏰ **Duration:** \`${this.formatDuration(trackInfo.duration)}\``,
                         `${loopEmoji} **Loop:** \`${trackInfo.loop || 'Off'}\``,
-                        `🔊 **Volume:** \`${trackInfo.volume || 50}%\``,
+                        `<:volume:1464838911439409305>  **Volume:** \`${trackInfo.volume || 50}%\``,
                         '',
                         '🎶 *Enjoying the vibes? Type more song names below to keep the party going!*'
                     ].join('\n'))
@@ -333,9 +333,9 @@ class CentralEmbedHandler {
                         name: '🚀 Features',
                         value: [
                             '• 🎵 High quality audio',
-                            '• 📜 Queue management', 
-                            '• 🔁 Loop & shuffle modes',
-                            '• 🎛️ Volume controls',
+                            '• <:queue:1464823466359521331> Queue management', 
+                            '• <:repeat:1464823558126698602> Loop & shuffle modes',
+                            '• <:volume:1464838911439409305> Volume controls',
                             '• ⚡ Lightning fast search'
                         ].join('\n'),
                         inline: true

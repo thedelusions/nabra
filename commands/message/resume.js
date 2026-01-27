@@ -53,7 +53,7 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor('#00FF00')
-                .setTitle('▶️ Music Resumed')
+                .setTitle('<:play:1464823386780864563>  Music Resumed')
                 .setTimestamp();
 
             if (currentTrack) {

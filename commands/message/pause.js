@@ -55,7 +55,7 @@ module.exports = {
             
             const embed = new EmbedBuilder()
                 .setColor('#FFA500')
-                .setTitle('⏸️ Music Paused')
+                .setTitle('<:pause:1464823417248415829> Music Paused')
                 .setTimestamp();
 
             if (currentTrack) {

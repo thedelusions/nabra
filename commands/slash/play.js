@@ -22,7 +22,7 @@ function createMusicButtons() {
     
                 new ButtonBuilder()
                     .setCustomId('music_skip')
-                    .setEmoji('<:next:1464824274186666139>')
+                    .setEmoji('<:last_page:1465502053848715457>')
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()

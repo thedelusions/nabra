@@ -299,68 +299,76 @@ async function handleSecureMusicButton(interaction, client) {
             case 'queue':
                 if (player.queue.size === 0) {
                     return interaction.reply({
-                        content: '📜 Queue is empty',
+                        content: '<:queue:1464823466359521331> Queue is empty',
                         ephemeral: true
                     });
                 }
                 
                 const songsPerPage = 10;
-                const totalQueuePages = Math.ceil(player.queue.size / songsPerPage);
                 let queueCurrentPage = 1;
                 
-                const createQueueContent = (page) => {
+                // Function to create queue content with fresh data
+                const createQueueContent = (page, currentPlayer) => {
+                    const freshQueue = currentPlayer.queue;
+                    const freshTotalPages = Math.ceil(freshQueue.size / songsPerPage) || 1;
                     const startIdx = (page - 1) * songsPerPage;
-                    const endIdx = startIdx + songsPerPage;
-                    const queueTracks = Array.from(player.queue).slice(startIdx, endIdx);
+                    const queueTracks = Array.from(freshQueue).slice(startIdx, startIdx + songsPerPage);
+                    
+                    if (queueTracks.length === 0) {
+                        return `<:queue:1464823466359521331> **Queue is empty**`;
+                    }
                     
                     const queueList = queueTracks.map((track, index) => 
                         `\`${startIdx + index + 1}.\` ${track.info.title.substring(0, 40)}${track.info.title.length > 40 ? '...' : ''}`
                     ).join('\n');
                     
-                    return `📜 **Queue (${player.queue.size} songs)**\n${queueList}\n\n📄 Page ${page}/${totalQueuePages}`;
+                    return `<:queue:1464823466359521331> **Queue (${freshQueue.size} songs)**\n${queueList}\n\n📄 Page ${page}/${freshTotalPages}`;
                 };
                 
-                const createQueueButtons = (page) => {
+                // Function to create buttons with fresh data
+                const createQueueButtons = (page, currentPlayer) => {
+                    const freshTotalPages = Math.ceil(currentPlayer.queue.size / songsPerPage) || 1;
                     return new ActionRowBuilder()
                         .addComponents(
                             new ButtonBuilder()
                                 .setCustomId('queue_page_first')
-                                .setEmoji('<:music_previous:1464824274186666139>')
+                                .setEmoji('<:first_page:1465502104977150093>')
                                 .setStyle(ButtonStyle.Secondary)
                                 .setDisabled(page === 1),
                             new ButtonBuilder()
                                 .setCustomId('queue_page_prev')
-                                .setEmoji('<:rewind:1464826397401940071>')
+                                .setEmoji('<:prev_page:1465502151441645619>')
                                 .setStyle(ButtonStyle.Secondary)
                                 .setDisabled(page === 1),
                             new ButtonBuilder()
                                 .setCustomId('queue_page_info')
-                                .setLabel(`${page}/${totalQueuePages}`)
+                                .setLabel(`${page}/${freshTotalPages}`)
                                 .setStyle(ButtonStyle.Primary)
                                 .setDisabled(true),
                             new ButtonBuilder()
                                 .setCustomId('queue_page_next')
-                                .setEmoji('<:rewind1:1464826294494695565>')
+                                .setEmoji('<:next_page:1465502170853019722>')
                                 .setStyle(ButtonStyle.Secondary)
-                                .setDisabled(page === totalQueuePages),
+                                .setDisabled(page === freshTotalPages),
                             new ButtonBuilder()
                                 .setCustomId('queue_page_last')
-                                .setEmoji('<:next:1464824274186666139>')
+                                .setEmoji('<:last_page:1465502053848715457>')
                                 .setStyle(ButtonStyle.Secondary)
-                                .setDisabled(page === totalQueuePages)
+                                .setDisabled(page === freshTotalPages)
                         );
                 };
                 
-                const queueComponents = totalQueuePages > 1 ? [createQueueButtons(1)] : [];
+                const initialTotalQueuePages = Math.ceil(player.queue.size / songsPerPage);
+                const queueComponents = initialTotalQueuePages > 1 ? [createQueueButtons(1, player)] : [];
                 
                 await interaction.reply({
-                    content: createQueueContent(1),
+                    content: createQueueContent(1, player),
                     components: queueComponents,
                     ephemeral: true
                 });
                 
                 // Only set up collector if multiple pages
-                if (totalQueuePages > 1) {
+                if (initialTotalQueuePages > 1) {
                     // Clean up existing collector for this user
                     const existingCollector = queuePaginationCollectors.get(interaction.user.id);
                     if (existingCollector) {
@@ -370,12 +378,25 @@ async function handleSecureMusicButton(interaction, client) {
                     const queueMessage = await interaction.fetchReply();
                     const queueCollector = queueMessage.createMessageComponentCollector({
                         filter: (i) => i.user.id === interaction.user.id && i.customId.startsWith('queue_page_'),
-                        time: 60000
+                        time: 120000
                     });
                     
                     queuePaginationCollectors.set(interaction.user.id, queueCollector);
                     
                     queueCollector.on('collect', async (i) => {
+                        // Re-fetch fresh player data
+                        const freshPlayer = client.riffy?.players?.get(interaction.guild.id);
+                        if (!freshPlayer || freshPlayer.queue.size === 0) {
+                            await i.update({
+                                content: '<:queue:1464823466359521331> **Queue is empty**',
+                                components: []
+                            }).catch(() => {});
+                            queueCollector.stop();
+                            return;
+                        }
+                        
+                        const freshTotalPages = Math.ceil(freshPlayer.queue.size / songsPerPage) || 1;
+                        
                         switch (i.customId) {
                             case 'queue_page_first':
                                 queueCurrentPage = 1;
@@ -384,16 +405,19 @@ async function handleSecureMusicButton(interaction, client) {
                                 queueCurrentPage = Math.max(1, queueCurrentPage - 1);
                                 break;
                             case 'queue_page_next':
-                                queueCurrentPage = Math.min(totalQueuePages, queueCurrentPage + 1);
+                                queueCurrentPage = Math.min(freshTotalPages, queueCurrentPage + 1);
                                 break;
                             case 'queue_page_last':
-                                queueCurrentPage = totalQueuePages;
+                                queueCurrentPage = freshTotalPages;
                                 break;
                         }
                         
+                        // Adjust page if out of bounds
+                        queueCurrentPage = Math.max(1, Math.min(queueCurrentPage, freshTotalPages));
+                        
                         await i.update({
-                            content: createQueueContent(queueCurrentPage),
-                            components: [createQueueButtons(queueCurrentPage)]
+                            content: createQueueContent(queueCurrentPage, freshPlayer),
+                            components: freshTotalPages > 1 ? [createQueueButtons(queueCurrentPage, freshPlayer)] : []
                         }).catch(() => {});
                     });
                     
@@ -463,7 +487,7 @@ async function handleSecureMusicButton(interaction, client) {
                 await interaction.reply({
                     content: `🎵 **Nabra Music Controls**\n\n` +
                         `**Row 1 - Playback**\n` +
-                        `▶️/⏸️ Play/Pause • ⏮️ Prev • ⏭️ Next • 📜 Queue • ⏹️ Stop\n\n` +
+                        `▶️/⏸️ Play/Pause • ⏮️ Prev • ⏭️ Next • <:queue:1464823466359521331> Queue • ⏹️ Stop\n\n` +
                         `**Row 2 - Track**\n` +
                         `🔁 Loop • ⏪ Rewind 10s • ⏩ Forward 10s • 🔉 Vol- • 🔊 Vol+\n\n` +
                         `**Row 3 - Utility**\n` +
@@ -552,7 +576,7 @@ async function handleChangelogButton(interaction, client) {
                 changelogService.skipChangelog(version);
                 
                 await interaction.editReply({
-                    content: `<:next:1464824274186666139> **Changelog v${version} skipped.**\n\nThis update won't be announced. You can manually announce later if needed.`,
+                    content: `<:last_page:1465502053848715457> **Changelog v${version} skipped.**\n\nThis update won't be announced. You can manually announce later if needed.`,
                     embeds: [],
                     components: []
                 });
