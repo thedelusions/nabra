@@ -131,7 +131,11 @@ class DiscordClientRuntimeManager {
                 host: systemConfiguration.lavalink.host,
                 password: systemConfiguration.lavalink.password,
                 port: systemConfiguration.lavalink.port,
-                secure: systemConfiguration.lavalink.secure
+                secure: systemConfiguration.lavalink.secure,
+                // Reconnect options for Heroku WebSocket stability
+                reconnectTimeout: 5000,
+                reconnectTries: 5,
+                resumeTimeout: 60
             }
         ];
     }

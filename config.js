@@ -36,10 +36,10 @@ class EnterpriseConfigurationManager {
              * For best reliability, host your own Lavalink server
              */
             lavalink: {
-                host: EnvironmentVariableProcessor.LAVALINK_HOST || "lava.link", 
-                port: EnvironmentVariableProcessor.LAVALINK_PORT || 80,       
-                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "anything", 
-                secure: EnvironmentVariableProcessor.LAVALINK_SECURE === 'true' || false
+                host: EnvironmentVariableProcessor.LAVALINK_HOST || "nabra-lavalink-2b9c309b74a6.herokuapp.com", 
+                port: EnvironmentVariableProcessor.LAVALINK_PORT || 443,       
+                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "NabraSecure2026", 
+                secure: EnvironmentVariableProcessor.LAVALINK_SECURE === 'true' || true
             },           
             /**
              * 🤖 BOT BEHAVIOR CONFIGURATION
