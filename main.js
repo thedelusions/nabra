@@ -75,8 +75,18 @@ class DiscordClientRuntimeManager {
         this.statsSubsystem = new StatsService();
         this.clientRuntimeInstance.statsService = this.statsSubsystem;
 
-        // Oureon analytics integration
-        this.clientRuntimeInstance.oureon = new OureonClient();
+        // Oureon analytics integration with defensive initialization
+        try {
+            if (typeof OureonClient === 'function') {
+                this.clientRuntimeInstance.oureon = new OureonClient();
+            } else {
+                logger.warn('OureonClient is not a constructor, using stub');
+                this.clientRuntimeInstance.oureon = { trackPlayed: () => {}, trackSkipped: () => {}, trackSearched: () => {}, commandUsed: () => {}, botJoinedServer: () => {}, botLeftServer: () => {}, errorOccurred: () => {}, queueEvent: () => {}, flush: () => {}, shutdown: () => {} };
+            }
+        } catch (error) {
+            logger.error('Failed to initialize OureonClient', { error: error.message });
+            this.clientRuntimeInstance.oureon = { trackPlayed: () => {}, trackSkipped: () => {}, trackSearched: () => {}, commandUsed: () => {}, botJoinedServer: () => {}, botLeftServer: () => {}, errorOccurred: () => {}, queueEvent: () => {}, flush: () => {}, shutdown: () => {} };
+        }
         
         // Dependency injection pattern for audio player management subsystem  
         this.audioPlayerManagementSubsystem = new AudioPlayerManagementHandler(this.clientRuntimeInstance);
@@ -399,6 +409,17 @@ class AudioSubsystemIntegrationManager {
         const validVoiceStateEvents = ['VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE'];
         
         if (!validVoiceStateEvents.includes(eventPayload.t)) return;
+        
+        // Validate VOICE_SERVER_UPDATE has required endpoint property
+        // Discord may send this event without endpoint during voice region changes
+        if (eventPayload.t === 'VOICE_SERVER_UPDATE') {
+            if (!eventPayload.d?.endpoint) {
+                logger.warn('Received VOICE_SERVER_UPDATE without endpoint, ignoring', { 
+                    guildId: eventPayload.d?.guild_id 
+                });
+                return;
+            }
+        }
         
         this.clientRuntimeInstance.riffy.updateVoiceState(eventPayload);
     }

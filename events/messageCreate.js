@@ -155,7 +155,11 @@ module.exports = {
 
             let commandName, args;
 
-            if (message.content.startsWith(config.bot.prefix)) {
+            // Case-insensitive prefix check (supports n!, N!, and commands like N!PLAY, n!skip)
+            const messageStart = message.content.slice(0, config.bot.prefix.length).toLowerCase();
+            const prefixLower = config.bot.prefix.toLowerCase();
+            
+            if (messageStart === prefixLower) {
                 args = message.content.slice(config.bot.prefix.length).trim().split(/ +/);
                 commandName = args.shift().toLowerCase();
             }

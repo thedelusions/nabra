@@ -1,20 +1,23 @@
 {
-    "currentVersion": "1.3.1",
+    "currentVersion": "1.3.2",
     "lastAnnouncedVersion": "1.3.0",
     "supportServerId": "1181577122456805467",
     "announcementChannelId": "1465228349139058761",
     "changes": [
         {
             "version": "1.3.2",
-            "date": "2026-02-2",
-            "title": "🎉 Minor Update - Capital Prefix Validation",
-            "description": "Ensures consistent command prefix usage!",
-            "features": [
-            ],
+            "date": "2026-02-03",
+            "title": "🔧 Stability & Prefix Improvements",
+            "description": "Bug fixes from Sentry error reports and case-insensitive prefix support!",
+            "features": [],
             "fixes": [
+                "🛡️ Fixed OureonClient initialization error with defensive fallback",
+                "🎤 Fixed voice connection crash when Discord sends incomplete VOICE_SERVER_UPDATE",
+                "🔤 Fixed prefix config syntax bug (comma operator issue)"
             ],
             "improvements": [
-                "Command prefix validation is now case-insensitive"
+                "📝 Command prefix is now case-insensitive (`n!play`, `N!PLAY`, `N!p` all work)",
+                "⚡ Better error handling for analytics subsystem initialization"
             ],
             "announced": false
         },
