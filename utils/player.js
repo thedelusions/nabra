@@ -129,19 +129,32 @@ class PlayerHandler {
      * Supports YouTube, Spotify, SoundCloud, and other platforms
      */
     processQuery(query) {
+        // Trim whitespace
+        query = query.trim();
+        
         // If query already has a search prefix, return as-is
         if (/^(ytsearch|ytmsearch|scsearch|spsearch|amsearch|dzsearch):/i.test(query)) {
             return query;
         }
 
-        // Check if it's a URL
-        const urlPattern = /^(https?:\/\/|www\.)/i;
-        if (urlPattern.test(query)) {
-            return query; // Return URLs as-is
+        // Check if it's a URL (including YouTube, Spotify, SoundCloud, etc.)
+        const urlPatterns = [
+            /^https?:\/\//i,                                    // Standard URLs
+            /^www\./i,                                          // www URLs
+            /youtube\.com/i,                                    // YouTube
+            /youtu\.be/i,                                       // YouTube short
+            /spotify\.com/i,                                    // Spotify
+            /soundcloud\.com/i,                                 // SoundCloud
+            /music\.apple\.com/i,                               // Apple Music
+            /deezer\.com/i,                                     // Deezer
+            /open\.spotify\.com/i                               // Spotify Open
+        ];
+        
+        if (urlPatterns.some(pattern => pattern.test(query))) {
+            return query; // Return URLs as-is for Lavalink to resolve
         }
 
         // If not a URL and no prefix, add default search prefix
-        // You can change 'ytmsearch:' to 'ytsearch:' or 'scsearch:' if you prefer
         return `ytmsearch:${query}`;
     }
 
@@ -191,7 +204,8 @@ class PlayerHandler {
             
             console.log(`📊 Load type: ${loadType}, Tracks found: ${tracks?.length || 0}`);
 
-            if (loadType === 'playlist') {
+            // Handle playlist loadType
+            if (loadType === 'playlist' || loadType === 'PLAYLIST_LOADED') {
                 for (const track of tracks) {
                     if (track && track.info) {
                         track.info.requester = requester;
@@ -210,7 +224,7 @@ class PlayerHandler {
                     firstTrack: tracks[0] || null
                 };
 
-            } else if (loadType === 'search' || loadType === 'track') {
+            } else if (loadType === 'search' || loadType === 'track' || loadType === 'TRACK_LOADED' || loadType === 'SEARCH_RESULT') {
                 const track = tracks[0];
                 if (!track || !track.info) {
                     console.warn('⚠️ No valid track info found');
@@ -243,13 +257,32 @@ class PlayerHandler {
                     track: track
                 };
 
-            } else if (loadType === 'empty') {
+            } else if (loadType === 'empty' || loadType === 'NO_MATCHES') {
                 console.warn('⚠️ Load type is empty - no results found');
                 return { type: 'error', message: 'No results found' };
-            } else if (loadType === 'error') {
+            } else if (loadType === 'error' || loadType === 'LOAD_FAILED') {
                 console.error('❌ Lavalink returned error load type');
                 return { type: 'error', message: 'Failed to load track' };
             } else {
+                // Handle any other loadType - if we have tracks, try to use them
+                if (tracks && tracks.length > 0) {
+                    console.log(`⚠️ Unknown load type "${loadType}" but tracks found, attempting to play...`);
+                    const track = tracks[0];
+                    if (track && track.info) {
+                        track.info.requester = requester;
+                        
+                        const duplicate = this.checkDuplicate(player, track);
+                        if (duplicate) {
+                            return { type: 'duplicate', track: track, duplicateInfo: duplicate };
+                        }
+                        
+                        player.queue.add(track);
+                        if (!player.playing && !player.paused) {
+                            await player.play();
+                        }
+                        return { type: 'track', track: track };
+                    }
+                }
                 console.warn(`⚠️ Unknown load type: ${loadType}`);
                 return { type: 'error', message: 'No results found' };
             }

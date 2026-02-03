@@ -1,9 +1,26 @@
 {
-    "currentVersion": "1.3.2",
+    "currentVersion": "1.3.3",
     "lastAnnouncedVersion": "1.3.0",
     "supportServerId": "1181577122456805467",
     "announcementChannelId": "1465228349139058761",
     "changes": [
+        {
+            "version": "1.3.3",
+            "date": "2026-02-03",
+            "title": "🔧 Voice & Playback Fixes",
+            "description": "Fixed auto-disconnect and YouTube playback issues!",
+            "features": [],
+            "fixes": [
+                "👋 Bot now disconnects when all users leave the voice channel",
+                "🎵 Fixed YouTube links sometimes returning 'no results found'",
+                "🔗 Improved URL detection for YouTube, Spotify, SoundCloud, etc."
+            ],
+            "improvements": [
+                "Better Lavalink v4 loadType compatibility",
+                "Graceful handling of unknown track load responses"
+            ],
+            "announced": false
+        },
         {
             "version": "1.3.2",
             "date": "2026-02-03",
@@ -19,7 +36,7 @@
                 "📝 Command prefix is now case-insensitive (`n!play`, `N!PLAY`, `N!p` all work)",
                 "⚡ Better error handling for analytics subsystem initialization"
             ],
-            "announced": false
+            "announced": true
         },
         {
             "version": "1.3.1",
