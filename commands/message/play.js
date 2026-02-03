@@ -80,7 +80,20 @@ module.exports = {
                 );
                 return message.reply({ embeds: [embed] })
                     .then(m => setTimeout(() => m.delete().catch(() => {}), 10000));
+            } else if (result.type === 'duplicate') {
+                // Track is already in queue or currently playing
+                const dupInfo = result.duplicateInfo;
+                const locationText = dupInfo.type === 'current' 
+                    ? 'currently playing' 
+                    : `already in queue at position #${dupInfo.position}`;
+                const embed = MusicFormatters.createErrorEmbed(
+                    `**${result.track.info.title}** is ${locationText}!`
+                );
+                return message.reply({ embeds: [embed] })
+                    .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
             } else {
+                // Log the actual result for debugging
+                console.error('Play command - unexpected result:', result);
                 const embed = MusicFormatters.createErrorEmbed('No results found for your query!');
                 return message.reply({ embeds: [embed] })
                     .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));

@@ -200,7 +200,42 @@ class PlayerHandler {
                 requester: requester 
             });
 
+            // Check if resolve returned valid data
+            if (!resolve) {
+                console.error('❌ Riffy resolve returned null/undefined');
+                return { type: 'error', message: 'Failed to resolve track' };
+            }
+
+            // Log full resolve response for debugging
+            console.log(`📊 Riffy resolve response:`, {
+                loadType: resolve?.loadType,
+                tracksCount: resolve?.tracks?.length || 0,
+                playlistName: resolve?.playlistInfo?.name,
+                hasData: !!resolve?.data,
+                rawKeys: resolve ? Object.keys(resolve) : []
+            });
+
             const { loadType, tracks, playlistInfo } = resolve;
+            
+            // Extra safety: if tracks exist but loadType is weird, try to play anyway
+            if ((!loadType || loadType === undefined) && tracks && tracks.length > 0) {
+                console.log(`⚠️ No loadType but tracks found (${tracks.length}), attempting to play...`);
+                const track = tracks[0];
+                if (track && track.info) {
+                    track.info.requester = requester;
+                    
+                    const duplicate = this.checkDuplicate(player, track);
+                    if (duplicate) {
+                        return { type: 'duplicate', track: track, duplicateInfo: duplicate };
+                    }
+                    
+                    player.queue.add(track);
+                    if (!player.playing && !player.paused) {
+                        await player.play();
+                    }
+                    return { type: 'track', track: track };
+                }
+            }
             
             console.log(`📊 Load type: ${loadType}, Tracks found: ${tracks?.length || 0}`);
 
@@ -259,9 +294,19 @@ class PlayerHandler {
 
             } else if (loadType === 'empty' || loadType === 'NO_MATCHES') {
                 console.warn('⚠️ Load type is empty - no results found');
+                
+                // Fallback: If it was a YouTube URL, try searching by video ID
+                const fallbackResult = await this.tryYouTubeFallback(player, query, requester);
+                if (fallbackResult) return fallbackResult;
+                
                 return { type: 'error', message: 'No results found' };
             } else if (loadType === 'error' || loadType === 'LOAD_FAILED') {
                 console.error('❌ Lavalink returned error load type');
+                
+                // Fallback: If it was a YouTube URL, try searching by video ID
+                const fallbackResult = await this.tryYouTubeFallback(player, query, requester);
+                if (fallbackResult) return fallbackResult;
+                
                 return { type: 'error', message: 'Failed to load track' };
             } else {
                 // Handle any other loadType - if we have tracks, try to use them
@@ -290,7 +335,71 @@ class PlayerHandler {
         } catch (error) {
             console.error('Play song error:', error.message);
             console.error('Stack:', error.stack);
+            
+            // Last resort fallback for YouTube URLs
+            const fallbackResult = await this.tryYouTubeFallback(player, query, requester);
+            if (fallbackResult) return fallbackResult;
+            
             return { type: 'error', message: 'Failed to play song' };
+        }
+    }
+
+    /**
+     * Fallback method for YouTube URLs that fail to load directly
+     * Extracts video ID and tries alternative search methods
+     */
+    async tryYouTubeFallback(player, originalQuery, requester) {
+        try {
+            // Check if it's a YouTube URL
+            const youtubePatterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/i,
+                /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/i
+            ];
+            
+            let videoId = null;
+            for (const pattern of youtubePatterns) {
+                const match = originalQuery.match(pattern);
+                if (match) {
+                    videoId = match[1];
+                    break;
+                }
+            }
+            
+            if (!videoId) return null;
+            
+            console.log(`🔄 Trying YouTube fallback search for video ID: ${videoId}`);
+            
+            // Try searching with ytsearch prefix using video ID
+            const fallbackQuery = `ytsearch:${videoId}`;
+            const resolve = await this.client.riffy.resolve({
+                query: fallbackQuery,
+                requester: requester
+            });
+            
+            if (resolve?.tracks?.length > 0) {
+                const track = resolve.tracks[0];
+                if (track && track.info) {
+                    console.log(`✅ Fallback successful: ${track.info.title}`);
+                    track.info.requester = requester;
+                    
+                    const duplicate = this.checkDuplicate(player, track);
+                    if (duplicate) {
+                        return { type: 'duplicate', track: track, duplicateInfo: duplicate };
+                    }
+                    
+                    player.queue.add(track);
+                    if (!player.playing && !player.paused) {
+                        await player.play();
+                    }
+                    return { type: 'track', track: track };
+                }
+            }
+            
+            console.warn('⚠️ YouTube fallback also failed');
+            return null;
+        } catch (error) {
+            console.error('YouTube fallback error:', error.message);
+            return null;
         }
     }
 

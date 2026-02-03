@@ -13,11 +13,13 @@
             "fixes": [
                 "👋 Bot now disconnects when all users leave the voice channel",
                 "🎵 Fixed YouTube links sometimes returning 'no results found'",
-                "🔗 Improved URL detection for YouTube, Spotify, SoundCloud, etc."
+                "🔗 Improved URL detection for YouTube, Spotify, SoundCloud, etc.",
+                "🔄 Added YouTube fallback search when direct URL fails"
             ],
             "improvements": [
-                "Better Lavalink v4 loadType compatibility",
-                "Graceful handling of unknown track load responses"
+                "📊 Better Lavalink v4 loadType compatibility",
+                "🛡️ Graceful handling of unknown track load responses",
+                "🔍 Enhanced debug logging for track resolution"
             ],
             "announced": false
         },
