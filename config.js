@@ -28,11 +28,17 @@ class EnterpriseConfigurationManager {
             /**
              * 🎵 LAVALINK AUDIO SERVER CONFIGURATION
              * Configure your Lavalink server for audio processing
+             * 
+             * Free public nodes (may have limited availability):
+             * - lava.link (port 80, password: anything)
+             * - lavalink.jirayu.net (port 13592, password: youshallnotpass)
+             * 
+             * For best reliability, host your own Lavalink server
              */
             lavalink: {
-                host: EnvironmentVariableProcessor.LAVALINK_HOST || "de-01.strixnodes.com", 
-                port: EnvironmentVariableProcessor.LAVALINK_PORT || 2010,       
-                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "glace", 
+                host: EnvironmentVariableProcessor.LAVALINK_HOST || "lava.link", 
+                port: EnvironmentVariableProcessor.LAVALINK_PORT || 80,       
+                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "anything", 
                 secure: EnvironmentVariableProcessor.LAVALINK_SECURE === 'true' || false
             },           
             /**
