@@ -367,35 +367,46 @@ class PlayerHandler {
             
             if (!videoId) return null;
             
-            console.log(`🔄 Trying YouTube fallback search for video ID: ${videoId}`);
+            console.log(`🔄 Trying YouTube fallback for video ID: ${videoId}`);
             
-            // Try searching with ytsearch prefix using video ID
-            const fallbackQuery = `ytsearch:${videoId}`;
-            const resolve = await this.client.riffy.resolve({
-                query: fallbackQuery,
-                requester: requester
-            });
+            // Try multiple search prefixes in order of preference
+            const searchPrefixes = ['ytmsearch:', 'ytsearch:', 'scsearch:'];
             
-            if (resolve?.tracks?.length > 0) {
-                const track = resolve.tracks[0];
-                if (track && track.info) {
-                    console.log(`✅ Fallback successful: ${track.info.title}`);
-                    track.info.requester = requester;
+            for (const prefix of searchPrefixes) {
+                try {
+                    console.log(`🔍 Trying fallback with ${prefix}${videoId}`);
+                    const resolve = await this.client.riffy.resolve({
+                        query: `${prefix}${videoId}`,
+                        requester: requester
+                    });
                     
-                    const duplicate = this.checkDuplicate(player, track);
-                    if (duplicate) {
-                        return { type: 'duplicate', track: track, duplicateInfo: duplicate };
-                    }
+                    console.log(`📊 Fallback ${prefix} result: loadType=${resolve?.loadType}, tracks=${resolve?.tracks?.length || 0}`);
                     
-                    player.queue.add(track);
-                    if (!player.playing && !player.paused) {
-                        await player.play();
+                    if (resolve?.tracks?.length > 0) {
+                        const track = resolve.tracks[0];
+                        if (track && track.info) {
+                            console.log(`✅ Fallback successful with ${prefix}: ${track.info.title}`);
+                            track.info.requester = requester;
+                            
+                            const duplicate = this.checkDuplicate(player, track);
+                            if (duplicate) {
+                                return { type: 'duplicate', track: track, duplicateInfo: duplicate };
+                            }
+                            
+                            player.queue.add(track);
+                            if (!player.playing && !player.paused) {
+                                await player.play();
+                            }
+                            return { type: 'track', track: track };
+                        }
                     }
-                    return { type: 'track', track: track };
+                } catch (prefixError) {
+                    console.warn(`⚠️ Fallback ${prefix} failed:`, prefixError.message);
+                    continue;
                 }
             }
             
-            console.warn('⚠️ YouTube fallback also failed');
+            console.warn('⚠️ All YouTube fallback methods failed');
             return null;
         } catch (error) {
             console.error('YouTube fallback error:', error.message);

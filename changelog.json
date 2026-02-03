@@ -21,7 +21,7 @@
                 "🛡️ Graceful handling of unknown track load responses",
                 "🔍 Enhanced debug logging for track resolution"
             ],
-            "announced": false
+            "announced": true
         },
         {
             "version": "1.3.2",
