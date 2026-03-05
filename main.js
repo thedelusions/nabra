@@ -132,11 +132,21 @@ class DiscordClientRuntimeManager {
         
         return [
             {
+                name: "Primary",
                 host: systemConfiguration.lavalink.host,
                 password: systemConfiguration.lavalink.password,
                 port: systemConfiguration.lavalink.port,
                 secure: systemConfiguration.lavalink.secure,
-                // Reconnect options - never give up reconnecting
+                reconnectTimeout: 10000,
+                reconnectTries: Infinity,
+                resumeTimeout: 120
+            },
+            {
+                name: "Fallback-Techbyte",
+                host: "lavahatry4.techbyte.host",
+                password: "naig.is-a.dev",
+                port: 3000,
+                secure: false,
                 reconnectTimeout: 10000,
                 reconnectTries: Infinity,
                 resumeTimeout: 120

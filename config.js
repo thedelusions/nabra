@@ -36,9 +36,9 @@ class EnterpriseConfigurationManager {
              * For best reliability, host your own Lavalink server
              */
             lavalink: {
-                host: EnvironmentVariableProcessor.LAVALINK_HOST || "45.13.236.245", 
-                port: EnvironmentVariableProcessor.LAVALINK_PORT || 25582,       
-                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "glace", 
+                host: EnvironmentVariableProcessor.LAVALINK_HOST || "lavalinkv4.serenetia.com", 
+                port: EnvironmentVariableProcessor.LAVALINK_PORT || 80,       
+                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "https://dsc.gg/ajidevserver", 
                 secure: EnvironmentVariableProcessor.LAVALINK_SECURE === 'true' ? true : false
             },         
             /**
