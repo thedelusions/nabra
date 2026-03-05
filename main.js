@@ -142,10 +142,10 @@ class DiscordClientRuntimeManager {
                 resumeTimeout: 120
             },
             {
-                name: "Fallback-Serenetia",
-                host: "lavalinkv4.serenetia.com",
-                password: "https://dsc.gg/ajidevserver",
-                port: 80,
+                name: "Fallback-Jirayu",
+                host: "lavalink.jirayu.net",
+                password: "youshallnotpass",
+                port: 13592,
                 secure: false,
                 reconnectTimeout: 10000,
                 reconnectTries: Infinity,
