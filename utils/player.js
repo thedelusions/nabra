@@ -249,7 +249,12 @@ class PlayerHandler {
                 }
 
                 if (!player.playing && !player.paused) {
-                    await player.play();
+                    try {
+                        await player.play();
+                    } catch (playErr) {
+                        console.error('Player.play() error (playlist):', playErr.message);
+                        return { type: 'error', message: 'Voice connection lost. Please rejoin and try again.' };
+                    }
                 }
 
                 return {
@@ -284,7 +289,12 @@ class PlayerHandler {
                 player.queue.add(track);
 
                 if (!player.playing && !player.paused) {
-                    await player.play();
+                    try {
+                        await player.play();
+                    } catch (playErr) {
+                        console.error('Player.play() error (track):', playErr.message);
+                        return { type: 'error', message: 'Voice connection lost. Please rejoin and try again.' };
+                    }
                 }
 
                 return {
@@ -587,7 +597,11 @@ class PlayerHandler {
                 }
         
                 if (player.isAutoplay) {
-                    player.autoplay(player);
+                    try {
+                        player.autoplay(player);
+                    } catch (autoplayErr) {
+                        console.error('Autoplay error:', autoplayErr.message);
+                    }
                 } else {
                     // Set a 3-minute timeout before disconnecting
                     console.log(`⏰ Bot will disconnect in 3 minutes if no new songs are added...`);

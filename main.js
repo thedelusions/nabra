@@ -132,10 +132,10 @@ class DiscordClientRuntimeManager {
                 password: systemConfiguration.lavalink.password,
                 port: systemConfiguration.lavalink.port,
                 secure: systemConfiguration.lavalink.secure,
-                // Reconnect options for Heroku WebSocket stability
-                reconnectTimeout: 5000,
-                reconnectTries: 5,
-                resumeTimeout: 60
+                // Reconnect options - never give up reconnecting
+                reconnectTimeout: 10000,
+                reconnectTries: Infinity,
+                resumeTimeout: 120
             }
         ];
     }
@@ -438,6 +438,21 @@ class AudioSubsystemIntegrationManager {
         
         this.clientRuntimeInstance.riffy.on('nodeError', (audioNodeInstance, nodeErrorException) => {
             logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: nodeErrorException.message });
+        });
+
+        this.clientRuntimeInstance.riffy.on('nodeDisconnect', (audioNodeInstance) => {
+            logger.warn(`🟡 Lavalink node "${audioNodeInstance.name}" disconnected, will auto-reconnect...`);
+            // Force reconnect after a delay if Riffy's built-in reconnect fails
+            setTimeout(() => {
+                try {
+                    if (!audioNodeInstance.connected) {
+                        logger.info(`🔄 Attempting manual reconnect to "${audioNodeInstance.name}"...`);
+                        audioNodeInstance.connect();
+                    }
+                } catch (err) {
+                    logger.error(`❌ Manual reconnect failed for "${audioNodeInstance.name}"`, { error: err.message });
+                }
+            }, 15000);
         });
     }
 }
