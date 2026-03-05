@@ -398,6 +398,8 @@ class AudioSubsystemIntegrationManager {
         this.clientRuntimeInstance = clientInstance;
         this.connectLoopInterval = null;
         this.healthCheckInterval = null;
+        this.wasDisconnected = true; // Track state to reduce log spam
+        this.reconnectAttempts = 0;
         this.initializeAudioEventHandlers();
         this.startConnectLoop();
         this.startHealthMonitoring();
@@ -437,18 +439,20 @@ class AudioSubsystemIntegrationManager {
 
     /**
      * Check if any Riffy nodes are currently connected
+     * Uses riffy.nodeMap which holds the actual Node objects (not riffy.nodes which is raw config)
      */
     hasConnectedNodes() {
         const riffy = this.clientRuntimeInstance.riffy;
-        if (!riffy || !riffy.nodes) return false;
+        if (!riffy) return false;
         try {
-            if (riffy.nodes instanceof Map) {
-                for (const [, node] of riffy.nodes) {
-                    if (node && (node.connected || node.state === 'CONNECTED')) return true;
-                }
-            } else if (Array.isArray(riffy.nodes)) {
-                for (const node of riffy.nodes) {
-                    if (node && (node.connected || node.state === 'CONNECTED')) return true;
+            // riffy.leastUsedNodes filters by node.connected, so if it has entries we're good
+            if (riffy.leastUsedNodes && riffy.leastUsedNodes.length > 0) return true;
+        } catch (_) {}
+        // Fallback: check nodeMap directly
+        try {
+            if (riffy.nodeMap && riffy.nodeMap instanceof Map) {
+                for (const [, node] of riffy.nodeMap) {
+                    if (node && node.connected) return true;
                 }
             }
         } catch (_) {}
@@ -474,23 +478,15 @@ class AudioSubsystemIntegrationManager {
     }
 
     /**
-     * Force reconnect all riffy nodes
+     * Force reconnect disconnected riffy nodes via nodeMap
      */
     forceReconnect() {
         const riffy = this.clientRuntimeInstance.riffy;
-        if (!riffy || !riffy.nodes) return;
+        if (!riffy || !riffy.nodeMap) return;
         try {
-            if (riffy.nodes instanceof Map) {
-                for (const [, node] of riffy.nodes) {
-                    if (node && !node.connected && typeof node.connect === 'function') {
-                        node.connect();
-                    }
-                }
-            } else if (Array.isArray(riffy.nodes)) {
-                for (const node of riffy.nodes) {
-                    if (node && !node.connected && typeof node.connect === 'function') {
-                        node.connect();
-                    }
+            for (const [, node] of riffy.nodeMap) {
+                if (node && !node.connected && typeof node.connect === 'function') {
+                    node.connect();
                 }
             }
         } catch (err) {
@@ -505,13 +501,26 @@ class AudioSubsystemIntegrationManager {
     startConnectLoop() {
         this.connectLoopInterval = setInterval(async () => {
             try {
-                if (this.hasConnectedNodes()) return;
+                if (this.hasConnectedNodes()) {
+                    if (this.wasDisconnected) {
+                        this.wasDisconnected = false;
+                        this.reconnectAttempts = 0;
+                    }
+                    return;
+                }
+                this.reconnectAttempts++;
+                this.wasDisconnected = true;
                 const healthy = await this.checkNodeHealth();
                 if (healthy) {
-                    logger.info('🔄 Lavalink node is healthy, forcing reconnect...');
+                    // Only log every 3rd attempt to reduce spam
+                    if (this.reconnectAttempts <= 1 || this.reconnectAttempts % 3 === 0) {
+                        logger.info(`🔄 Lavalink node is healthy, forcing reconnect... (attempt ${this.reconnectAttempts})`);
+                    }
                     this.forceReconnect();
                 } else {
-                    logger.warn('⚠️ Lavalink node health check failed, will retry...');
+                    if (this.reconnectAttempts <= 1 || this.reconnectAttempts % 6 === 0) {
+                        logger.warn(`⚠️ Lavalink node unreachable, will keep retrying... (attempt ${this.reconnectAttempts})`);
+                    }
                 }
             } catch (_) {}
         }, 10000);

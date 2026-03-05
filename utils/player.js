@@ -159,31 +159,43 @@ class PlayerHandler {
     }
 
     async createPlayer(guildId, voiceChannelId, textChannelId, options = {}) {
-        try {
-            let player = this.client.riffy.players.get(guildId);
-            
-            if (player) {
-                if (player.voiceChannel === voiceChannelId) {
-                    return player;
-                } else {
-                    await player.setVoiceChannel(voiceChannelId);
-                    return player;
+        const maxRetries = 3;
+        const retryDelay = 3000; // 3 seconds between retries
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                let player = this.client.riffy.players.get(guildId);
+                
+                if (player) {
+                    if (player.voiceChannel === voiceChannelId) {
+                        return player;
+                    } else {
+                        await player.setVoiceChannel(voiceChannelId);
+                        return player;
+                    }
                 }
+
+                player = this.client.riffy.createConnection({
+                    guildId: guildId,
+                    voiceChannel: voiceChannelId,
+                    textChannel: textChannelId,
+                    deaf: true,
+                    ...options
+                });
+
+                return player;
+            } catch (error) {
+                const isNoNodes = error.message?.includes('No nodes') || error.message?.includes('no available');
+                if (isNoNodes && attempt < maxRetries) {
+                    console.log(`⏳ No Lavalink nodes available, retrying in ${retryDelay / 1000}s... (attempt ${attempt}/${maxRetries})`);
+                    await new Promise(r => setTimeout(r, retryDelay));
+                    continue;
+                }
+                console.error(`Player creation error (attempt ${attempt}/${maxRetries}):`, error.message);
+                return null;
             }
-
-            player = this.client.riffy.createConnection({
-                guildId: guildId,
-                voiceChannel: voiceChannelId,
-                textChannel: textChannelId,
-                deaf: true,
-                ...options
-            });
-
-            return player;
-        } catch (error) {
-            console.error('Player creation error:', error.message);
-            return null;
         }
+        return null;
     }
 
     async playSong(player, query, requester) {
