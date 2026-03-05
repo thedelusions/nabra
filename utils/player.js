@@ -368,7 +368,7 @@ class PlayerHandler {
 
     /**
      * Fallback method for YouTube URLs that fail to load directly
-     * Extracts video ID and tries alternative search methods
+     * Extracts video ID, fetches the title via oEmbed, then searches by title
      */
     async tryYouTubeFallback(player, originalQuery, requester) {
         try {
@@ -391,23 +391,43 @@ class PlayerHandler {
             
             console.log(`🔄 Trying YouTube fallback for video ID: ${videoId}`);
             
-            // Try multiple search prefixes in order of preference
-            const searchPrefixes = ['ytmsearch:', 'ytsearch:', 'scsearch:'];
+            // First, try to get the video title via YouTube oEmbed API
+            let searchTitle = null;
+            try {
+                const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+                const response = await fetch(oEmbedUrl, { signal: AbortSignal.timeout(5000) });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.title) {
+                        searchTitle = data.title;
+                        console.log(`📝 Got video title from oEmbed: ${searchTitle}`);
+                    }
+                }
+            } catch (oEmbedErr) {
+                console.warn('⚠️ oEmbed title fetch failed:', oEmbedErr.message);
+            }
             
-            for (const prefix of searchPrefixes) {
+            // Build search queries: prefer title-based search, fall back to video ID
+            const searchQueries = [];
+            if (searchTitle) {
+                searchQueries.push(`ytsearch:${searchTitle}`, `ytmsearch:${searchTitle}`);
+            }
+            searchQueries.push(`ytmsearch:${videoId}`, `ytsearch:${videoId}`, `scsearch:${videoId}`);
+            
+            for (const query of searchQueries) {
                 try {
-                    console.log(`🔍 Trying fallback with ${prefix}${videoId}`);
+                    console.log(`🔍 Trying fallback with ${query}`);
                     const resolve = await this.client.riffy.resolve({
-                        query: `${prefix}${videoId}`,
+                        query: query,
                         requester: requester
                     });
                     
-                    console.log(`📊 Fallback ${prefix} result: loadType=${resolve?.loadType}, tracks=${resolve?.tracks?.length || 0}`);
+                    console.log(`📊 Fallback result: loadType=${resolve?.loadType}, tracks=${resolve?.tracks?.length || 0}`);
                     
                     if (resolve?.tracks?.length > 0) {
                         const track = resolve.tracks[0];
                         if (track && track.info) {
-                            console.log(`✅ Fallback successful with ${prefix}: ${track.info.title}`);
+                            console.log(`✅ Fallback successful with: ${track.info.title}`);
                             track.info.requester = requester;
                             
                             const duplicate = this.checkDuplicate(player, track);
@@ -423,7 +443,7 @@ class PlayerHandler {
                         }
                     }
                 } catch (prefixError) {
-                    console.warn(`⚠️ Fallback ${prefix} failed:`, prefixError.message);
+                    console.warn(`⚠️ Fallback failed:`, prefixError.message);
                     continue;
                 }
             }
