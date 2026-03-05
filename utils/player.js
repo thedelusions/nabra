@@ -159,31 +159,43 @@ class PlayerHandler {
     }
 
     async createPlayer(guildId, voiceChannelId, textChannelId, options = {}) {
-        try {
-            let player = this.client.riffy.players.get(guildId);
-            
-            if (player) {
-                if (player.voiceChannel === voiceChannelId) {
-                    return player;
-                } else {
-                    await player.setVoiceChannel(voiceChannelId);
-                    return player;
+        const maxRetries = 3;
+        const retryDelay = 3000;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                let player = this.client.riffy.players.get(guildId);
+
+                if (player) {
+                    if (player.voiceChannel === voiceChannelId) {
+                        return player;
+                    } else {
+                        await player.setVoiceChannel(voiceChannelId);
+                        return player;
+                    }
                 }
+
+                player = this.client.riffy.createConnection({
+                    guildId: guildId,
+                    voiceChannel: voiceChannelId,
+                    textChannel: textChannelId,
+                    deaf: true,
+                    ...options
+                });
+
+                return player;
+            } catch (error) {
+                const isNoNodes = error.message?.includes('No nodes') || error.message?.includes('no available');
+                if (isNoNodes && attempt < maxRetries) {
+                    console.log(`⏳ No nodes available, retrying in ${retryDelay / 1000}s... (${attempt}/${maxRetries})`);
+                    await new Promise(r => setTimeout(r, retryDelay));
+                    continue;
+                }
+                console.error(`Player creation error (attempt ${attempt}):`, error.message);
+                return null;
             }
-
-            player = this.client.riffy.createConnection({
-                guildId: guildId,
-                voiceChannel: voiceChannelId,
-                textChannel: textChannelId,
-                deaf: true,
-                ...options
-            });
-
-            return player;
-        } catch (error) {
-            console.error('Player creation error:', error.message);
-            return null;
         }
+        return null;
     }
 
     async playSong(player, query, requester) {
@@ -249,7 +261,12 @@ class PlayerHandler {
                 }
 
                 if (!player.playing && !player.paused) {
-                    await player.play();
+                    try {
+                        await player.play();
+                    } catch (playErr) {
+                        console.error('Player.play() error (playlist):', playErr.message);
+                        return { type: 'error', message: 'Voice connection lost. Please rejoin and try again.' };
+                    }
                 }
 
                 return {
@@ -284,7 +301,12 @@ class PlayerHandler {
                 player.queue.add(track);
 
                 if (!player.playing && !player.paused) {
-                    await player.play();
+                    try {
+                        await player.play();
+                    } catch (playErr) {
+                        console.error('Player.play() error (track):', playErr.message);
+                        return { type: 'error', message: 'Voice connection lost. Please rejoin and try again.' };
+                    }
                 }
 
                 return {

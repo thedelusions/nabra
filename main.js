@@ -23,6 +23,7 @@ const EnvironmentVariableConfigurationLoader = require('dotenv');
 const OureonClient = require('./utils/oureonClient');
 const shiva = require('./shiva');
 const logger = require('./utils/logger');
+const http = require('http');
 
 // Initialize environment variable configuration subsystem
 EnvironmentVariableConfigurationLoader.config();
@@ -112,7 +113,10 @@ class DiscordClientRuntimeManager {
                     }
                 },
                 defaultSearchPlatform: "ytmsearch",
-                restVersion: "v4"
+                restVersion: "v4",
+                autoResume: true,
+                resumeKey: "NabraMusic",
+                resumeTimeout: 30000
             }
         );
         
@@ -132,10 +136,10 @@ class DiscordClientRuntimeManager {
                 password: systemConfiguration.lavalink.password,
                 port: systemConfiguration.lavalink.port,
                 secure: systemConfiguration.lavalink.secure,
-                // Reconnect options for Heroku WebSocket stability
-                reconnectTimeout: 5000,
-                reconnectTries: 5,
-                resumeTimeout: 60
+                // Reconnect options - never give up reconnecting
+                reconnectTimeout: 10000,
+                reconnectTries: Infinity,
+                resumeTimeout: 120
             }
         ];
     }
@@ -392,52 +396,130 @@ class EventHandlerRegistrationService {
 class AudioSubsystemIntegrationManager {
     constructor(clientInstance) {
         this.clientRuntimeInstance = clientInstance;
+        this.connectLoopInterval = null;
+        this.healthCheckInterval = null;
+        this.wasDisconnected = true;
+        this.reconnectAttempts = 0;
         this.initializeAudioEventHandlers();
+        this.startConnectLoop();
+        this.startHealthMonitoring();
     }
-    
-    /**
-     * Initialize comprehensive audio event handling subsystem
-     */
+
     initializeAudioEventHandlers() {
         this.clientRuntimeInstance.on('raw', (gatewayEventPayload) => {
             this.processGatewayVoiceStateEvent(gatewayEventPayload);
         });
-        
         this.bindRiffyEventHandlers();
     }
-    
-    /**
-     * Process Discord gateway voice state events with validation
-     */
+
     processGatewayVoiceStateEvent(eventPayload) {
         const validVoiceStateEvents = ['VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE'];
-        
         if (!validVoiceStateEvents.includes(eventPayload.t)) return;
-        
-        // Validate VOICE_SERVER_UPDATE has required endpoint property
-        // Discord may send this event without endpoint during voice region changes
         if (eventPayload.t === 'VOICE_SERVER_UPDATE') {
             if (!eventPayload.d?.endpoint) {
-                logger.warn('Received VOICE_SERVER_UPDATE without endpoint, ignoring', { 
-                    guildId: eventPayload.d?.guild_id 
+                logger.warn('Received VOICE_SERVER_UPDATE without endpoint, ignoring', {
+                    guildId: eventPayload.d?.guild_id
                 });
                 return;
             }
         }
-        
         this.clientRuntimeInstance.riffy.updateVoiceState(eventPayload);
     }
-    
-    /**
-     * Bind Riffy framework event handlers with comprehensive logging
-     */
+
+    hasConnectedNodes() {
+        const riffy = this.clientRuntimeInstance.riffy;
+        if (!riffy) return false;
+        try {
+            if (riffy.leastUsedNodes && riffy.leastUsedNodes.length > 0) return true;
+        } catch (_) {}
+        try {
+            if (riffy.nodeMap && riffy.nodeMap instanceof Map) {
+                for (const [, node] of riffy.nodeMap) {
+                    if (node && node.connected) return true;
+                }
+            }
+        } catch (_) {}
+        return false;
+    }
+
+    checkNodeHealth() {
+        return new Promise((resolve) => {
+            const config = SystemConfigurationManager.lavalink;
+            const url = `http${config.secure ? 's' : ''}://${config.host}:${config.port}/version`;
+            const req = http.get(url, { headers: { Authorization: config.password }, timeout: 4000 }, (res) => {
+                let data = '';
+                res.on('data', (c) => data += c);
+                res.on('end', () => resolve(res.statusCode === 200));
+            });
+            req.on('timeout', () => { req.destroy(); resolve(false); });
+            req.on('error', () => resolve(false));
+        });
+    }
+
+    forceReconnect() {
+        const riffy = this.clientRuntimeInstance.riffy;
+        if (!riffy || !riffy.nodeMap) return;
+        try {
+            for (const [, node] of riffy.nodeMap) {
+                if (node && !node.connected && typeof node.connect === 'function') {
+                    node.connect();
+                }
+            }
+        } catch (err) {
+            logger.error('Force reconnect error', { error: err.message });
+        }
+    }
+
+    startConnectLoop() {
+        this.connectLoopInterval = setInterval(async () => {
+            try {
+                if (this.hasConnectedNodes()) {
+                    if (this.wasDisconnected) {
+                        this.wasDisconnected = false;
+                        this.reconnectAttempts = 0;
+                    }
+                    return;
+                }
+                this.reconnectAttempts++;
+                this.wasDisconnected = true;
+                const healthy = await this.checkNodeHealth();
+                if (healthy) {
+                    if (this.reconnectAttempts <= 1 || this.reconnectAttempts % 3 === 0) {
+                        logger.info(`🔄 Lavalink node healthy, reconnecting... (attempt ${this.reconnectAttempts})`);
+                    }
+                    this.forceReconnect();
+                } else {
+                    if (this.reconnectAttempts <= 1 || this.reconnectAttempts % 6 === 0) {
+                        logger.warn(`⚠️ Lavalink node unreachable (attempt ${this.reconnectAttempts})`);
+                    }
+                }
+            } catch (_) {}
+        }, 10000);
+    }
+
+    startHealthMonitoring() {
+        this.healthCheckInterval = setInterval(async () => {
+            if (!this.hasConnectedNodes()) {
+                logger.warn('🟡 No Lavalink nodes connected, reconnecting...');
+                const healthy = await this.checkNodeHealth();
+                if (healthy) this.forceReconnect();
+            }
+        }, 60000);
+    }
+
     bindRiffyEventHandlers() {
         this.clientRuntimeInstance.riffy.on('nodeConnect', (audioNodeInstance) => {
             logger.info(`🎵 Lavalink node "${audioNodeInstance.name}" connected`);
         });
-        
+
         this.clientRuntimeInstance.riffy.on('nodeError', (audioNodeInstance, nodeErrorException) => {
-            logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: nodeErrorException.message });
+            const msg = nodeErrorException?.message || '';
+            if (msg.includes('player.restart is not a function') || msg.includes('restart is not a function')) return;
+            logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: msg });
+        });
+
+        this.clientRuntimeInstance.riffy.on('nodeDisconnect', (audioNodeInstance) => {
+            logger.warn(`🟡 Lavalink node "${audioNodeInstance.name}" disconnected`);
         });
     }
 }
