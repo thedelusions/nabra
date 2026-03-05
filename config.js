@@ -36,8 +36,8 @@ class EnterpriseConfigurationManager {
              * For best reliability, host your own Lavalink server
              */
             lavalink: {
-                host: EnvironmentVariableProcessor.LAVALINK_HOST || "de-01.strixnodes.com", 
-                port: EnvironmentVariableProcessor.LAVALINK_PORT || 2010,       
+                host: EnvironmentVariableProcessor.LAVALINK_HOST || "45.13.236.245", 
+                port: EnvironmentVariableProcessor.LAVALINK_PORT || 25582,       
                 password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "glace", 
                 secure: EnvironmentVariableProcessor.LAVALINK_SECURE === 'true' ? true : false
             },         
