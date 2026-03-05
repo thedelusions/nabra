@@ -36,9 +36,9 @@ class EnterpriseConfigurationManager {
              * For best reliability, host your own Lavalink server
              */
             lavalink: {
-                host: EnvironmentVariableProcessor.LAVALINK_HOST || "45.13.236.245", 
-                port: EnvironmentVariableProcessor.LAVALINK_PORT || 25582,       
-                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "glace", 
+                host: EnvironmentVariableProcessor.LAVALINK_HOST || "165.227.132.211", 
+                port: EnvironmentVariableProcessor.LAVALINK_PORT || 2333,       
+                password: EnvironmentVariableProcessor.LAVALINK_PASSWORD || "NabraBot", 
                 secure: EnvironmentVariableProcessor.LAVALINK_SECURE === 'true' ? true : false
             },         
             /**

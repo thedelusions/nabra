@@ -132,21 +132,11 @@ class DiscordClientRuntimeManager {
         
         return [
             {
-                name: "Primary",
+                name: "nabra-node-1",
                 host: systemConfiguration.lavalink.host,
                 password: systemConfiguration.lavalink.password,
                 port: systemConfiguration.lavalink.port,
                 secure: systemConfiguration.lavalink.secure,
-                reconnectTimeout: 10000,
-                reconnectTries: Infinity,
-                resumeTimeout: 120
-            },
-            {
-                name: "Fallback-Jirayu",
-                host: "lavalink.jirayu.net",
-                password: "youshallnotpass",
-                port: 13592,
-                secure: false,
                 reconnectTimeout: 10000,
                 reconnectTries: Infinity,
                 resumeTimeout: 120
