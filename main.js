@@ -23,6 +23,7 @@ const EnvironmentVariableConfigurationLoader = require('dotenv');
 const OureonClient = require('./utils/oureonClient');
 const shiva = require('./shiva');
 const logger = require('./utils/logger');
+const http = require('http');
 
 // Initialize environment variable configuration subsystem
 EnvironmentVariableConfigurationLoader.config();
@@ -112,7 +113,10 @@ class DiscordClientRuntimeManager {
                     }
                 },
                 defaultSearchPlatform: "ytmsearch",
-                restVersion: "v4"
+                restVersion: "v4",
+                autoResume: true,
+                resumeKey: "NabraMusic",
+                resumeTimeout: 30000
             }
         );
         
@@ -392,7 +396,11 @@ class EventHandlerRegistrationService {
 class AudioSubsystemIntegrationManager {
     constructor(clientInstance) {
         this.clientRuntimeInstance = clientInstance;
+        this.connectLoopInterval = null;
+        this.healthCheckInterval = null;
         this.initializeAudioEventHandlers();
+        this.startConnectLoop();
+        this.startHealthMonitoring();
     }
     
     /**
@@ -415,7 +423,6 @@ class AudioSubsystemIntegrationManager {
         if (!validVoiceStateEvents.includes(eventPayload.t)) return;
         
         // Validate VOICE_SERVER_UPDATE has required endpoint property
-        // Discord may send this event without endpoint during voice region changes
         if (eventPayload.t === 'VOICE_SERVER_UPDATE') {
             if (!eventPayload.d?.endpoint) {
                 logger.warn('Received VOICE_SERVER_UPDATE without endpoint, ignoring', { 
@@ -427,6 +434,104 @@ class AudioSubsystemIntegrationManager {
         
         this.clientRuntimeInstance.riffy.updateVoiceState(eventPayload);
     }
+
+    /**
+     * Check if any Riffy nodes are currently connected
+     */
+    hasConnectedNodes() {
+        const riffy = this.clientRuntimeInstance.riffy;
+        if (!riffy || !riffy.nodes) return false;
+        try {
+            if (riffy.nodes instanceof Map) {
+                for (const [, node] of riffy.nodes) {
+                    if (node && (node.connected || node.state === 'CONNECTED')) return true;
+                }
+            } else if (Array.isArray(riffy.nodes)) {
+                for (const node of riffy.nodes) {
+                    if (node && (node.connected || node.state === 'CONNECTED')) return true;
+                }
+            }
+        } catch (_) {}
+        return false;
+    }
+
+    /**
+     * Ping lavalink /version endpoint to verify the node is actually reachable
+     */
+    checkNodeHealth() {
+        return new Promise((resolve) => {
+            const config = SystemConfigurationManager.lavalink;
+            const protocol = config.secure ? 'https' : 'http';
+            const url = `${protocol}://${config.host}:${config.port}/version`;
+            const req = http.get(url, { headers: { Authorization: config.password }, timeout: 4000 }, (res) => {
+                let data = '';
+                res.on('data', (c) => data += c);
+                res.on('end', () => resolve(res.statusCode === 200));
+            });
+            req.on('timeout', () => { req.destroy(); resolve(false); });
+            req.on('error', () => resolve(false));
+        });
+    }
+
+    /**
+     * Force reconnect all riffy nodes
+     */
+    forceReconnect() {
+        const riffy = this.clientRuntimeInstance.riffy;
+        if (!riffy || !riffy.nodes) return;
+        try {
+            if (riffy.nodes instanceof Map) {
+                for (const [, node] of riffy.nodes) {
+                    if (node && !node.connected && typeof node.connect === 'function') {
+                        node.connect();
+                    }
+                }
+            } else if (Array.isArray(riffy.nodes)) {
+                for (const node of riffy.nodes) {
+                    if (node && !node.connected && typeof node.connect === 'function') {
+                        node.connect();
+                    }
+                }
+            }
+        } catch (err) {
+            logger.error('Force reconnect error', { error: err.message });
+        }
+    }
+
+    /**
+     * Connect loop — every 10s, if no nodes are connected, try to reconnect
+     * Inspired by PrimeMusic's robust node management
+     */
+    startConnectLoop() {
+        this.connectLoopInterval = setInterval(async () => {
+            try {
+                if (this.hasConnectedNodes()) return;
+                const healthy = await this.checkNodeHealth();
+                if (healthy) {
+                    logger.info('🔄 Lavalink node is healthy, forcing reconnect...');
+                    this.forceReconnect();
+                } else {
+                    logger.warn('⚠️ Lavalink node health check failed, will retry...');
+                }
+            } catch (_) {}
+        }, 10000);
+    }
+
+    /**
+     * Health monitoring — every 60s, log node status and reconnect if needed
+     */
+    startHealthMonitoring() {
+        this.healthCheckInterval = setInterval(async () => {
+            const connected = this.hasConnectedNodes();
+            if (!connected) {
+                logger.warn('🟡 No Lavalink nodes connected, attempting reconnect...');
+                const healthy = await this.checkNodeHealth();
+                if (healthy) {
+                    this.forceReconnect();
+                }
+            }
+        }, 60000);
+    }
     
     /**
      * Bind Riffy framework event handlers with comprehensive logging
@@ -437,22 +542,21 @@ class AudioSubsystemIntegrationManager {
         });
         
         this.clientRuntimeInstance.riffy.on('nodeError', (audioNodeInstance, nodeErrorException) => {
-            logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: nodeErrorException.message });
+            const msg = nodeErrorException?.message || '';
+            // Ignore known Riffy bug
+            if (msg.includes('player.restart is not a function') || msg.includes('restart is not a function')) {
+                logger.warn(`Ignoring Riffy reconnect bug for "${audioNodeInstance.name}" - will reconnect automatically`);
+                return;
+            }
+            logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: msg });
+            // If Riffy gave up after its retry limit, force reconnect via the connect loop
+            if (msg.includes('after 3 attempts') || msg.includes('Unable to connect')) {
+                logger.info('🔄 Riffy gave up retrying, connect loop will handle reconnection...');
+            }
         });
 
         this.clientRuntimeInstance.riffy.on('nodeDisconnect', (audioNodeInstance) => {
-            logger.warn(`🟡 Lavalink node "${audioNodeInstance.name}" disconnected, will auto-reconnect...`);
-            // Force reconnect after a delay if Riffy's built-in reconnect fails
-            setTimeout(() => {
-                try {
-                    if (!audioNodeInstance.connected) {
-                        logger.info(`🔄 Attempting manual reconnect to "${audioNodeInstance.name}"...`);
-                        audioNodeInstance.connect();
-                    }
-                } catch (err) {
-                    logger.error(`❌ Manual reconnect failed for "${audioNodeInstance.name}"`, { error: err.message });
-                }
-            }, 15000);
+            logger.warn(`🟡 Lavalink node "${audioNodeInstance.name}" disconnected — connect loop will handle reconnection`);
         });
     }
 }
