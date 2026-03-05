@@ -731,7 +731,13 @@ class PlayerHandler {
                 // Try to play next track instead of disconnecting
                 if (player.queue.size > 0) {
                     console.log(`⏭️ Skipping failed track, playing next...`);
-                    setTimeout(() => player.play(), 500);
+                    setTimeout(async () => {
+                        try {
+                            if (player.queue.size > 0) await player.play();
+                        } catch (e) {
+                            console.error('Error playing next track after trackError:', e.message);
+                        }
+                    }, 500);
                 } else {
                     console.log(`🛑 No more tracks in queue after error`);
                 }
@@ -749,7 +755,11 @@ class PlayerHandler {
                 // Skip stuck track and continue
                 if (player.queue.size > 0) {
                     console.log(`⏭️ Skipping stuck track, playing next...`);
-                    await player.play();
+                    try {
+                        if (player.queue.size > 0) await player.play();
+                    } catch (e) {
+                        console.error('Error playing next track after stuck:', e.message);
+                    }
                 } else {
                     console.log(`🛑 No more tracks in queue after stuck track`);
                 }
@@ -767,7 +777,11 @@ class PlayerHandler {
                 // Try to continue with next track
                 if (player.queue.size > 0) {
                     console.log(`⏭️ Skipping failed track, playing next...`);
-                    await player.play();
+                    try {
+                        if (player.queue.size > 0) await player.play();
+                    } catch (e) {
+                        console.error('Error playing next track after exception:', e.message);
+                    }
                 }
             } catch (error) {
                 console.error('Error handling player exception:', error.message);
