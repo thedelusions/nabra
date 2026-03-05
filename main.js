@@ -23,7 +23,6 @@ const EnvironmentVariableConfigurationLoader = require('dotenv');
 const OureonClient = require('./utils/oureonClient');
 const shiva = require('./shiva');
 const logger = require('./utils/logger');
-const http = require('http');
 
 // Initialize environment variable configuration subsystem
 EnvironmentVariableConfigurationLoader.config();
@@ -113,10 +112,7 @@ class DiscordClientRuntimeManager {
                     }
                 },
                 defaultSearchPlatform: "ytmsearch",
-                restVersion: "v4",
-                autoResume: true,
-                resumeKey: "NabraMusic",
-                resumeTimeout: 30000
+                restVersion: "v4"
             }
         );
         
@@ -136,10 +132,10 @@ class DiscordClientRuntimeManager {
                 password: systemConfiguration.lavalink.password,
                 port: systemConfiguration.lavalink.port,
                 secure: systemConfiguration.lavalink.secure,
-                // Reconnect options - never give up reconnecting
-                reconnectTimeout: 10000,
-                reconnectTries: Infinity,
-                resumeTimeout: 120
+                // Reconnect options for Heroku WebSocket stability
+                reconnectTimeout: 5000,
+                reconnectTries: 5,
+                resumeTimeout: 60
             }
         ];
     }
@@ -396,13 +392,7 @@ class EventHandlerRegistrationService {
 class AudioSubsystemIntegrationManager {
     constructor(clientInstance) {
         this.clientRuntimeInstance = clientInstance;
-        this.connectLoopInterval = null;
-        this.healthCheckInterval = null;
-        this.wasDisconnected = true; // Track state to reduce log spam
-        this.reconnectAttempts = 0;
         this.initializeAudioEventHandlers();
-        this.startConnectLoop();
-        this.startHealthMonitoring();
     }
     
     /**
@@ -425,6 +415,7 @@ class AudioSubsystemIntegrationManager {
         if (!validVoiceStateEvents.includes(eventPayload.t)) return;
         
         // Validate VOICE_SERVER_UPDATE has required endpoint property
+        // Discord may send this event without endpoint during voice region changes
         if (eventPayload.t === 'VOICE_SERVER_UPDATE') {
             if (!eventPayload.d?.endpoint) {
                 logger.warn('Received VOICE_SERVER_UPDATE without endpoint, ignoring', { 
@@ -436,111 +427,6 @@ class AudioSubsystemIntegrationManager {
         
         this.clientRuntimeInstance.riffy.updateVoiceState(eventPayload);
     }
-
-    /**
-     * Check if any Riffy nodes are currently connected
-     * Uses riffy.nodeMap which holds the actual Node objects (not riffy.nodes which is raw config)
-     */
-    hasConnectedNodes() {
-        const riffy = this.clientRuntimeInstance.riffy;
-        if (!riffy) return false;
-        try {
-            // riffy.leastUsedNodes filters by node.connected, so if it has entries we're good
-            if (riffy.leastUsedNodes && riffy.leastUsedNodes.length > 0) return true;
-        } catch (_) {}
-        // Fallback: check nodeMap directly
-        try {
-            if (riffy.nodeMap && riffy.nodeMap instanceof Map) {
-                for (const [, node] of riffy.nodeMap) {
-                    if (node && node.connected) return true;
-                }
-            }
-        } catch (_) {}
-        return false;
-    }
-
-    /**
-     * Ping lavalink /version endpoint to verify the node is actually reachable
-     */
-    checkNodeHealth() {
-        return new Promise((resolve) => {
-            const config = SystemConfigurationManager.lavalink;
-            const protocol = config.secure ? 'https' : 'http';
-            const url = `${protocol}://${config.host}:${config.port}/version`;
-            const req = http.get(url, { headers: { Authorization: config.password }, timeout: 4000 }, (res) => {
-                let data = '';
-                res.on('data', (c) => data += c);
-                res.on('end', () => resolve(res.statusCode === 200));
-            });
-            req.on('timeout', () => { req.destroy(); resolve(false); });
-            req.on('error', () => resolve(false));
-        });
-    }
-
-    /**
-     * Force reconnect disconnected riffy nodes via nodeMap
-     */
-    forceReconnect() {
-        const riffy = this.clientRuntimeInstance.riffy;
-        if (!riffy || !riffy.nodeMap) return;
-        try {
-            for (const [, node] of riffy.nodeMap) {
-                if (node && !node.connected && typeof node.connect === 'function') {
-                    node.connect();
-                }
-            }
-        } catch (err) {
-            logger.error('Force reconnect error', { error: err.message });
-        }
-    }
-
-    /**
-     * Connect loop — every 10s, if no nodes are connected, try to reconnect
-     * Inspired by PrimeMusic's robust node management
-     */
-    startConnectLoop() {
-        this.connectLoopInterval = setInterval(async () => {
-            try {
-                if (this.hasConnectedNodes()) {
-                    if (this.wasDisconnected) {
-                        this.wasDisconnected = false;
-                        this.reconnectAttempts = 0;
-                    }
-                    return;
-                }
-                this.reconnectAttempts++;
-                this.wasDisconnected = true;
-                const healthy = await this.checkNodeHealth();
-                if (healthy) {
-                    // Only log every 3rd attempt to reduce spam
-                    if (this.reconnectAttempts <= 1 || this.reconnectAttempts % 3 === 0) {
-                        logger.info(`🔄 Lavalink node is healthy, forcing reconnect... (attempt ${this.reconnectAttempts})`);
-                    }
-                    this.forceReconnect();
-                } else {
-                    if (this.reconnectAttempts <= 1 || this.reconnectAttempts % 6 === 0) {
-                        logger.warn(`⚠️ Lavalink node unreachable, will keep retrying... (attempt ${this.reconnectAttempts})`);
-                    }
-                }
-            } catch (_) {}
-        }, 10000);
-    }
-
-    /**
-     * Health monitoring — every 60s, log node status and reconnect if needed
-     */
-    startHealthMonitoring() {
-        this.healthCheckInterval = setInterval(async () => {
-            const connected = this.hasConnectedNodes();
-            if (!connected) {
-                logger.warn('🟡 No Lavalink nodes connected, attempting reconnect...');
-                const healthy = await this.checkNodeHealth();
-                if (healthy) {
-                    this.forceReconnect();
-                }
-            }
-        }, 60000);
-    }
     
     /**
      * Bind Riffy framework event handlers with comprehensive logging
@@ -551,21 +437,7 @@ class AudioSubsystemIntegrationManager {
         });
         
         this.clientRuntimeInstance.riffy.on('nodeError', (audioNodeInstance, nodeErrorException) => {
-            const msg = nodeErrorException?.message || '';
-            // Ignore known Riffy bug
-            if (msg.includes('player.restart is not a function') || msg.includes('restart is not a function')) {
-                logger.warn(`Ignoring Riffy reconnect bug for "${audioNodeInstance.name}" - will reconnect automatically`);
-                return;
-            }
-            logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: msg });
-            // If Riffy gave up after its retry limit, force reconnect via the connect loop
-            if (msg.includes('after 3 attempts') || msg.includes('Unable to connect')) {
-                logger.info('🔄 Riffy gave up retrying, connect loop will handle reconnection...');
-            }
-        });
-
-        this.clientRuntimeInstance.riffy.on('nodeDisconnect', (audioNodeInstance) => {
-            logger.warn(`🟡 Lavalink node "${audioNodeInstance.name}" disconnected — connect loop will handle reconnection`);
+            logger.error(`🔴 Lavalink node "${audioNodeInstance.name}" error`, { error: nodeErrorException.message });
         });
     }
 }
