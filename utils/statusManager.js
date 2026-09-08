@@ -332,7 +332,14 @@ class StatusManager {
  
     async onTrackEnd(guildId) {
         setTimeout(async () => {
-            await this.updateStatusAndVoice(guildId);
+            const player = this.client.riffy.players.get(guildId);
+
+            // trackEnd can arrive after Lavalink has already started the next track.
+            if (player?.playing && player.current?.info) return;
+            if (player?.queue?.size > 0) return;
+
+            await this.setDefaultStatus();
+            await this.clearVoiceChannelStatus(guildId);
         }, 1000);
     }
 
