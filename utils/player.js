@@ -149,9 +149,9 @@ class PlayerHandler {
         // Check current track
         if (player.current) {
             const current = player.current.info;
-            if (current.uri === trackUri || 
+            if (!current.nabraPlaybackFailed && (current.uri === trackUri ||
                 current.identifier === trackIdentifier ||
-                current.title?.toLowerCase() === trackTitle) {
+                current.title?.toLowerCase() === trackTitle)) {
                 return { type: 'current', track: player.current };
             }
         }
@@ -812,6 +812,7 @@ class PlayerHandler {
                 const trackTitle = track?.info?.title || 'Unknown Track';
                 const source = track?.info?.sourceName || 'Unknown';
                 const errorMsg = error.exception?.message || error.message || 'Unknown error';
+                if (track?.info) track.info.nabraPlaybackFailed = true;
                 const queueWasEmpty = player.queue.size === 0;
                 const fallbackTrack = await this.playSoundCloudFallback(player, track);
 
