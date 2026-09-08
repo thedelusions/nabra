@@ -815,7 +815,7 @@ class PlayerHandler {
                 const queueWasEmpty = player.queue.size === 0;
                 const fallbackTrack = await this.playSoundCloudFallback(player, track);
 
-                if (fallbackTrack && queueWasEmpty && !player.playing) {
+                if (fallbackTrack && queueWasEmpty && (player.current === track || !player.playing)) {
                     try {
                         await player.play();
                     } catch (playError) {
