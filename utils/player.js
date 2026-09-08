@@ -145,11 +145,13 @@ class PlayerHandler {
         const trackUri = track.info.uri;
         const trackTitle = track.info.title?.toLowerCase();
         const trackIdentifier = track.info.identifier;
+        const trackSource = track.info.sourceName;
 
         // Check current track
         if (player.current) {
             const current = player.current.info;
-            if (!current.nabraPlaybackFailed && (current.uri === trackUri ||
+            const sameSource = current.sourceName === trackSource;
+            if (!current.nabraPlaybackFailed && sameSource && (current.uri === trackUri ||
                 current.identifier === trackIdentifier ||
                 current.title?.toLowerCase() === trackTitle)) {
                 return { type: 'current', track: player.current };
@@ -162,9 +164,10 @@ class PlayerHandler {
             if (!queueTrack || !queueTrack.info) continue;
             
             const qInfo = queueTrack.info;
-            if (qInfo.uri === trackUri || 
+            const sameSource = qInfo.sourceName === trackSource;
+            if (sameSource && (qInfo.uri === trackUri ||
                 qInfo.identifier === trackIdentifier ||
-                qInfo.title?.toLowerCase() === trackTitle) {
+                qInfo.title?.toLowerCase() === trackTitle)) {
                 return { type: 'queue', track: queueTrack, position: i + 1 };
             }
         }
