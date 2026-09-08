@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const shiva = require('../shiva');
+const seekPlayer = require('../utils/seekPlayer');
 
 // Store active pagination collectors for queue
 const queuePaginationCollectors = new Map();
@@ -453,7 +454,7 @@ async function handleSecureMusicButton(interaction, client) {
                 // Rewind 10 seconds
                 const currentPosRewind = player.position;
                 const newPosRewind = Math.max(0, currentPosRewind - 10000);
-                player.seek(newPosRewind);
+                await seekPlayer(player, newPosRewind);
                 await interaction.reply({
                     content: `⏪ Rewound 10 seconds (${formatTime(newPosRewind)})`,
                     ephemeral: true
@@ -465,7 +466,7 @@ async function handleSecureMusicButton(interaction, client) {
                 const currentPosForward = player.position;
                 const trackDuration = player.current?.info?.length || 0;
                 const newPosForward = Math.min(trackDuration - 1000, currentPosForward + 10000);
-                player.seek(newPosForward);
+                await seekPlayer(player, newPosForward);
                 await interaction.reply({
                     content: `⏩ Forwarded 10 seconds (${formatTime(newPosForward)})`,
                     ephemeral: true

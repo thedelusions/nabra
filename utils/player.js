@@ -425,7 +425,7 @@ class PlayerHandler {
     }
 
     async playSoundCloudFallback(player, track) {
-        if (!player || !track?.info || track.info.sourceName !== 'youtube') return null;
+        if (!player || !track?.info || !['youtube', 'soundcloud'].includes(track.info.sourceName)) return null;
 
         const title = track.info.title?.trim();
         if (!title || track.info.nabraSoundCloudFallbackTried) return null;
@@ -433,22 +433,25 @@ class PlayerHandler {
         track.info.nabraSoundCloudFallbackTried = true;
         const author = track.info.author?.trim();
         const baseTitle = title.split(/\s+[-–—]+\s+/)[0].trim();
+        const sourceName = track.info.sourceName;
+        const searchPrefix = sourceName === 'youtube' ? 'scsearch:' : 'ytmsearch:';
         const fallbackQueries = [
-            `scsearch:${title}${author ? ` ${author}` : ''}`,
-            `scsearch:${title}`,
-            `scsearch:${baseTitle}`
+            `${searchPrefix}${title}${author ? ` ${author}` : ''}`,
+            `${searchPrefix}${title}`,
+            `${searchPrefix}${baseTitle}`
         ];
 
         try {
             let fallbackTrack = null;
             for (const fallbackQuery of fallbackQueries) {
-                console.log(`🔄 YouTube playback failed, trying SoundCloud: ${fallbackQuery}`);
+                console.log(`🔄 ${sourceName} playback failed, trying ${sourceName === 'youtube' ? 'SoundCloud' : 'YouTube Music'}: ${fallbackQuery}`);
                 const resolve = await this.client.riffy.resolve({
                     query: fallbackQuery,
                     requester: track.info.requester
                 });
+                const fallbackSource = sourceName === 'youtube' ? 'soundcloud' : 'youtube';
                 fallbackTrack = resolve?.tracks?.find(candidate =>
-                    candidate?.info?.sourceName === 'soundcloud'
+                    candidate?.info?.sourceName === fallbackSource
                 );
                 if (fallbackTrack) break;
             }

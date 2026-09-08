@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const shiva = require('../../shiva');
 const MusicFormatters = require('../../utils/formatters');
+const seekPlayer = require('../../utils/seekPlayer');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
@@ -76,7 +77,7 @@ module.exports = {
                     .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 5000));
             }
 
-            await player.seek(seekMs);
+            await seekPlayer(player, seekMs);
 
             const embed = new EmbedBuilder()
                 .setDescription(`⏱️ Seeked to **${MusicFormatters.formatDuration(seekMs)}**`)

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const shiva = require('../../shiva');
 const MusicFormatters = require('../../utils/formatters');
+const seekPlayer = require('../../utils/seekPlayer');
 
 const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 
@@ -59,7 +60,7 @@ module.exports = {
             const seconds = interaction.options.getInteger('seconds') || 10;
             const newPosition = Math.max(0, player.position - (seconds * 1000));
 
-            await player.seek(newPosition);
+            await seekPlayer(player, newPosition);
 
             const embed = new EmbedBuilder()
                 .setColor('#2F3767')
