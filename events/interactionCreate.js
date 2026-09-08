@@ -75,6 +75,11 @@ module.exports = {
 
             } catch (error) {
                 console.error('Error executing slash command:', error);
+
+                if (error?.code === 10062 || error?.code === '10062' || error?.message === 'Unknown interaction') {
+                    console.warn('⚠️ Interaction expired before the command could respond');
+                    return;
+                }
                 
                 if (error.message.includes('shiva') || error.message.includes('validateCore')) {
                     const securityEmbed = new EmbedBuilder()
@@ -97,9 +102,9 @@ module.exports = {
                 };
                 
                 if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp(reply);
+                    await interaction.followUp(reply).catch(() => {});
                 } else {
-                    await interaction.reply(reply);
+                    await interaction.reply(reply).catch(() => {});
                 }
             }
         }

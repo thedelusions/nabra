@@ -13,6 +13,7 @@ class CentralEmbedHandler {
         // Local cache fallback (also used when Redis unavailable)
         this.configCache = new Map();
         this.CACHE_TTL = 60; // 60 seconds (in seconds for Redis)
+        this.recreatingEmbeds = new Map();
     }
     
     /**
@@ -155,6 +156,8 @@ class CentralEmbedHandler {
                 }
             }
 
+            await this.invalidateCache(guildId);
+
             logger.info(`✅ Central embed created in ${guildId}`);
             return message;
         } catch (error) {
@@ -256,8 +259,13 @@ class CentralEmbedHandler {
             const message = await channel.messages.fetch(serverConfig.centralSetup.embedId).catch(() => null);
             if (!message) {
                 logger.warn(`Could not fetch central embed message for guild ${guildId}, recreating...`);
-                // Try to recreate the embed
-                const newMessage = await this.createCentralEmbed(serverConfig.centralSetup.channelId, guildId);
+                let recreation = this.recreatingEmbeds.get(guildId);
+                if (!recreation) {
+                    recreation = this.createCentralEmbed(serverConfig.centralSetup.channelId, guildId)
+                        .finally(() => this.recreatingEmbeds.delete(guildId));
+                    this.recreatingEmbeds.set(guildId, recreation);
+                }
+                const newMessage = await recreation;
                 if (!newMessage) return;
                 // Continue with the new message for update
                 return this.updateCentralEmbed(guildId, trackInfo);
