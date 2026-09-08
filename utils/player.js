@@ -428,9 +428,9 @@ class PlayerHandler {
         if (!player || !track?.info || !['youtube', 'soundcloud'].includes(track.info.sourceName)) return null;
 
         const title = track.info.title?.trim();
-        if (!title || track.info.nabraSoundCloudFallbackTried) return null;
+        if (!title || track.info.nabraFallbackTried) return null;
 
-        track.info.nabraSoundCloudFallbackTried = true;
+        track.info.nabraFallbackTried = true;
         const author = track.info.author?.trim();
         const baseTitle = title.split(/\s+[-–—]+\s+/)[0].trim();
         const sourceName = track.info.sourceName;
@@ -462,10 +462,8 @@ class PlayerHandler {
             }
 
             fallbackTrack.info.requester = track.info.requester;
-            player.queue.add(fallbackTrack);
-            player.playing = false;
-            player.paused = false;
-            await player.play();
+            fallbackTrack.info.nabraFallbackTried = true;
+            player.queue.unshift(fallbackTrack);
             return fallbackTrack;
         } catch (error) {
             console.error('SoundCloud fallback failed:', error.message);
@@ -838,16 +836,9 @@ class PlayerHandler {
                     }
                 }
                 
-                // Try to play next track instead of disconnecting
+                // Riffy advances the queue after a track error. Calling play() here races that transition.
                 if (player.queue.size > 0) {
-                    console.log(`⏭️ Skipping failed track, playing next...`);
-                    setTimeout(async () => {
-                        try {
-                            if (player.queue.size > 0) await player.play();
-                        } catch (e) {
-                            console.error('Error playing next track after trackError:', e.message);
-                        }
-                    }, 500);
+                    console.log(`⏭️ Failed track handled; Lavalink will continue with the next queued track`);
                 } else {
                     console.log(`🛑 No more tracks in queue after error`);
                 }
