@@ -267,8 +267,7 @@ class CentralEmbedHandler {
                 }
                 const newMessage = await recreation;
                 if (!newMessage) return;
-                // Continue with the new message for update
-                return this.updateCentralEmbed(guildId, trackInfo);
+                return;
             }
             
             let embed, components = [];
