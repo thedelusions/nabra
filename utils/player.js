@@ -812,7 +812,16 @@ class PlayerHandler {
                 const trackTitle = track?.info?.title || 'Unknown Track';
                 const source = track?.info?.sourceName || 'Unknown';
                 const errorMsg = error.exception?.message || error.message || 'Unknown error';
+                const queueWasEmpty = player.queue.size === 0;
                 const fallbackTrack = await this.playSoundCloudFallback(player, track);
+
+                if (fallbackTrack && queueWasEmpty && !player.playing) {
+                    try {
+                        await player.play();
+                    } catch (playError) {
+                        console.error('Fallback track could not start:', playError.message);
+                    }
+                }
                 
                 console.error(`❌ Track error [${source}]: ${trackTitle}`);
                 console.error(`   Error: ${errorMsg}`);
