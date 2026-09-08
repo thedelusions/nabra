@@ -110,6 +110,8 @@ class StatusManager {
 
 
     async clearVoiceChannelStatus(guildId) {
+        if (!config.features.voiceChannelStatus) return;
+
         try {
             const guild = this.client.guilds.cache.get(guildId);
             if (!guild) return;

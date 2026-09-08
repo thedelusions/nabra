@@ -457,13 +457,13 @@ class PlayerHandler {
             }
 
             if (!fallbackTrack?.info) {
-                console.warn(`⚠️ No SoundCloud alternative found for: ${title}`);
+                console.warn(`⚠️ No ${sourceName === 'youtube' ? 'SoundCloud' : 'YouTube'} alternative found for: ${title}`);
                 return null;
             }
 
             fallbackTrack.info.requester = track.info.requester;
             fallbackTrack.info.nabraFallbackTried = true;
-            player.queue.unshift(fallbackTrack);
+            player.queue.add(fallbackTrack);
             return fallbackTrack;
         } catch (error) {
             console.error('SoundCloud fallback failed:', error.message);
@@ -824,7 +824,7 @@ class PlayerHandler {
                         const channel = await this.client.channels.fetch(player.textChannel);
                         const embed = new EmbedBuilder()
                             .setDescription(`${fallbackTrack
-                                          ? `⚠️ YouTube playback failed for **${trackTitle}**. Playing a SoundCloud alternative.`
+                                          ? `⚠️ ${source} playback failed for **${trackTitle}**. Queued a ${source === 'youtube' ? 'SoundCloud' : 'YouTube'} alternative.`
                                           : `⚠️ Failed to play: **${trackTitle}**`}\n` +
                                           `Source: ${source}\n` +
                                           `${fallbackTrack || player.queue.size > 0 ? '⏭️ Continuing playback...' : ''}`)
