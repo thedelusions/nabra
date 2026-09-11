@@ -1,10 +1,27 @@
 const Play = require('../models/Play');
 
-const DURATION_EXPR = { $ifNull: ['$playedMs', { $ifNull: ['$durationMs', 0] }] };
+const DURATION_EXPR = {
+    $cond: [
+        { $eq: ['$status', 'started'] },
+        {
+            $min: [
+                { $ifNull: ['$durationMs', 0] },
+                { $max: [0, { $subtract: ['$$NOW', '$startedAt'] }] }
+            ]
+        },
+        { $ifNull: ['$playedMs', { $ifNull: ['$durationMs', 0] }] }
+    ]
+};
 
 class StatsService {
     constructor() {
         this.activeSessions = new Map(); // guildId -> { playId, startedAt, durationMs }
+        this.persistenceInterval = setInterval(() => {
+            this.persistActiveSessions().catch(error => {
+                console.error('StatsService persistence error:', error.message);
+            });
+        }, 15000);
+        this.persistenceInterval.unref();
     }
 
     getTimeRange(timeframe) {
@@ -95,6 +112,35 @@ class StatsService {
         } catch (error) {
             console.error('StatsService.endSession error:', error.message);
         }
+    }
+
+    getPlayedMs(session, now = Date.now()) {
+        const elapsedMs = Math.max(0, now - session.startedAt.getTime());
+        return Math.min(session.durationMs || elapsedMs, elapsedMs);
+    }
+
+    async persistActiveSessions() {
+        const now = new Date();
+
+        await Promise.all([...this.activeSessions.entries()].map(async ([guildId, session]) => {
+            const playedMs = this.getPlayedMs(session, now.getTime());
+            await Play.findByIdAndUpdate(session.playId, { playedMs });
+        }));
+    }
+
+    async shutdown() {
+        clearInterval(this.persistenceInterval);
+
+        const endedAt = new Date();
+        await Promise.all([...this.activeSessions.entries()].map(async ([guildId, session]) => {
+            const playedMs = this.getPlayedMs(session, endedAt.getTime());
+            await Play.findByIdAndUpdate(session.playId, {
+                endedAt,
+                playedMs,
+                status: 'ended'
+            });
+            this.activeSessions.delete(guildId);
+        }));
     }
 
     async getGuildSummary(guildId, timeframe = '7d') {

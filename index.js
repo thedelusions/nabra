@@ -15,7 +15,7 @@ if (process.env.SENTRY_DSN) {
 
 // Now import everything else AFTER Sentry is initialized
 const express = require("express");
-require('./main');
+const { client: botClient } = require('./main');
 require('./shiva');
 const path = require('path');
 const logger = require('./utils/logger');
@@ -110,6 +110,7 @@ app.use((err, req, res, next) => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, shutting down gracefully');
+    await botClient.statsService?.shutdown();
     await cache.shutdown();
     process.exit(0);
 });
