@@ -6,7 +6,7 @@ const COMMAND_SECURITY_TOKEN = shiva.SECURITY_TOKEN;
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('stop')
-        .setDescription('Stop music and disconnect from voice channel'),
+        .setDescription('Stop music'),
     securityToken: COMMAND_SECURITY_TOKEN,
 
     async execute(interaction, client) {
@@ -45,9 +45,12 @@ module.exports = {
             }
 
             const player = conditions.player;
-            player.destroy();
+            const stayedConnected = await client.playerHandler.stopPlayback(player);
 
-            const embed = new EmbedBuilder().setDescription('🛑 Music stopped and disconnected from voice channel!');
+            const message = stayedConnected
+                ? '🛑 Music stopped; 24/7 mode is keeping the bot in voice channel.'
+                : '🛑 Music stopped and disconnected from voice channel!';
+            const embed = new EmbedBuilder().setDescription(message);
             return interaction.editReply({ embeds: [embed] })
                 .then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 3000));
 

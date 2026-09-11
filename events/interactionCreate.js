@@ -252,9 +252,11 @@ async function handleSecureMusicButton(interaction, client) {
                 break;
                 
             case 'stop':
-                player.destroy();
+                const stayedConnected = await client.playerHandler.stopPlayback(player);
                 await interaction.reply({
-                    content: '🛑 Music stopped and disconnected',
+                    content: stayedConnected
+                        ? '🛑 Music stopped; 24/7 mode is keeping the bot in voice channel.'
+                        : '🛑 Music stopped and disconnected',
                     ephemeral: true
                 });
                 break;

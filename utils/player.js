@@ -11,6 +11,27 @@ class PlayerHandler {
         this.nowPlayingMessages = new Map(); // Track now playing messages to delete old ones
     }
 
+    async stopPlayback(player) {
+        const Server = require('../models/Server');
+        const serverConfig = await Server.findById(player.guildId);
+        const keepConnected = serverConfig?.settings?.alwaysOn === true;
+
+        player.queue.clear();
+
+        if (keepConnected) {
+            if (player.current || player.playing) {
+                player.stop();
+            }
+
+            await this.client.statusManager?.setDefaultStatus();
+            await this.centralEmbed.updateCentralEmbed(player.guildId, null);
+            return true;
+        }
+
+        player.destroy();
+        return false;
+    }
+
     protectPlayerPlay(player) {
         if (!player) return player;
 

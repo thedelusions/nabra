@@ -45,19 +45,6 @@ class StatusManager {
         });
         
     
-        this.currentInterval = setInterval(async () => {
-            if (this.isPlaying) {
-                await this.client.user.setPresence({
-                    activities: [{
-                        name: activity,
-                        type: ActivityType.Listening
-                    }],
-                    status: 'online'
-                });
-                console.log(`🔄 Status refreshed: ${activity}`);
-            }
-        }, 30000);
-        
         console.log(`✅ Status locked to: ${activity}`);
     }
 
