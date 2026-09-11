@@ -230,6 +230,25 @@ class PlayerHandler {
         return `ytmsearch:${query}`;
     }
 
+    async expandSoundCloudUrl(query) {
+        if (!/^https?:\/\/on\.soundcloud\.com\//i.test(query)) return query;
+
+        try {
+            const response = await fetch(query, { redirect: 'follow' });
+            const resolvedUrl = response.url;
+            await response.body?.cancel();
+
+            if (resolvedUrl && resolvedUrl !== query) {
+                console.log(`🔗 Expanded SoundCloud link to ${resolvedUrl}`);
+                return resolvedUrl;
+            }
+        } catch (error) {
+            console.warn(`⚠️ Could not expand SoundCloud link: ${error.message}`);
+        }
+
+        return query;
+    }
+
     async createPlayer(guildId, voiceChannelId, textChannelId, options = {}) {
         const maxRetries = 3;
         const retryDelay = 3000;
@@ -277,7 +296,8 @@ class PlayerHandler {
             if (!player) return { type: 'error', message: 'Player not available' };
 
             // Smart query processing - detect if it's a URL or needs search prefix
-            const processedQuery = this.processQuery(query);
+            let processedQuery = this.processQuery(query);
+            processedQuery = await this.expandSoundCloudUrl(processedQuery);
             
             console.log(`🔍 Resolving query: ${processedQuery.substring(0, 100)}...`);
 
@@ -304,10 +324,14 @@ class PlayerHandler {
             const { loadType, tracks, playlistInfo } = resolve;
 
             if (!loadType && (!tracks || tracks.length === 0)) {
-                console.error('❌ Lavalink returned no load type or tracks; node may be unavailable');
+                console.error('❌ Lavalink returned no load type or tracks', {
+                    query: processedQuery,
+                    exception: resolve.exception || null,
+                    message: resolve.message || null
+                });
                 return {
                     type: 'error',
-                    message: 'Lavalink is currently unavailable. Please try again in a moment.'
+                    message: resolve.exception?.message || resolve.message || 'Lavalink could not resolve that link. Please try a search or direct track URL.'
                 };
             }
             
@@ -667,6 +691,13 @@ class PlayerHandler {
             try {
                 const trackTitle = track?.info?.title || 'Unknown Track';
                 console.log(`🎵 Started playing: ${trackTitle} in ${player.guildId}`);
+
+                if (!player.voiceChannel) {
+                    console.warn('⚠️ Track started without an active voice connection', {
+                        guildId: player.guildId,
+                        voiceChannel: player.voiceChannel
+                    });
+                }
                 
                 // Clear disconnect timeout since a new track is playing
                 if (this.disconnectTimeouts.has(player.guildId)) {
