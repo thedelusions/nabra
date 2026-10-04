@@ -24,6 +24,7 @@ const OureonClient = require('./utils/oureonClient');
 const shiva = require('./shiva');
 const logger = require('./utils/logger');
 const http = require('http');
+const https = require('https');
 
 // Initialize environment variable configuration subsystem
 EnvironmentVariableConfigurationLoader.config();
@@ -446,7 +447,8 @@ class AudioSubsystemIntegrationManager {
         return new Promise((resolve) => {
             const config = SystemConfigurationManager.lavalink;
             const url = `http${config.secure ? 's' : ''}://${config.host}:${config.port}/version`;
-            const req = http.get(url, { headers: { Authorization: config.password }, timeout: 4000 }, (res) => {
+            const transport = config.secure ? https : http;
+            const req = transport.get(url, { headers: { Authorization: config.password }, timeout: 4000 }, (res) => {
                 let data = '';
                 res.on('data', (c) => data += c);
                 res.on('end', () => resolve(res.statusCode === 200));

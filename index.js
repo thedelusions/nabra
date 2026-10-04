@@ -22,6 +22,13 @@ const logger = require('./utils/logger');
 const cache = require('./utils/cache');
 const mongoose = require('mongoose');
 
+process.on('unhandledRejection', (error) => {
+    logger.error('Unhandled async error', {
+        error: error?.message || String(error),
+        stack: error?.stack
+    });
+});
+
 const app = express();
 const port = process.env.PORT || 8888;
 const startTime = Date.now();

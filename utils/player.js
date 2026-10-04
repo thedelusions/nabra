@@ -590,7 +590,12 @@ class PlayerHandler {
                             
                             player.queue.add(track);
                             if (!player.playing && !player.paused) {
-                                await player.play();
+                                try {
+                                    await player.play();
+                                } catch (playError) {
+                                    console.error('Player.play() error (fallback):', playError.message);
+                                    return null;
+                                }
                             }
                             return { type: 'track', track: track };
                         }

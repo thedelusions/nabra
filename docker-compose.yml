@@ -19,6 +19,18 @@ services:
     expose:
       - "2333"
 
+  yt-cipher:
+    image: ghcr.io/kikkia/yt-cipher:latest
+    container_name: nabra-yt-cipher
+    restart: unless-stopped
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8001"
+      API_TOKEN: ${YOUTUBE_CIPHER_PASSWORD:-change-me}
+      OVERRIDE_SCRIPT_VARIANT: IAS
+    ports:
+      - "8001:8001"
+
   bot:
     build: .
     container_name: nabra-bot
