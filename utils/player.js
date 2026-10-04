@@ -871,21 +871,25 @@ class PlayerHandler {
             try {
                 const trackTitle = track?.info?.title || 'Unknown Track';
                 const source = track?.info?.sourceName || 'Unknown';
-                const errorMsg = error.exception?.message || error.message || 'Unknown error';
+                const errorMsg = error?.exception?.message || error?.message || 'Unknown error';
                 if (track?.info) track.info.nabraPlaybackFailed = true;
                 const queueWasEmpty = player.queue.size === 0;
+
+                console.error(`❌ Track error [${source}]: ${trackTitle}`);
+                console.error(`   Error: ${errorMsg}`);
+                if (error?.exception) {
+                    console.error(`   Exception: ${JSON.stringify(error.exception)}`);
+                }
+
                 const fallbackTrack = await this.playSoundCloudFallback(player, track);
 
                 if (fallbackTrack && queueWasEmpty && (player.current === track || !player.playing)) {
-                    try {
-                        await player.play();
-                    } catch (playError) {
-                        console.error('Fallback track could not start:', playError.message);
-                    }
+                    setTimeout(() => {
+                        player.play().catch((playError) => {
+                            console.error('Fallback track could not start:', playError.message);
+                        });
+                    }, 250);
                 }
-                
-                console.error(`❌ Track error [${source}]: ${trackTitle}`);
-                console.error(`   Error: ${errorMsg}`);
                 
                 // Notify user about the error
                 if (player.textChannel) {

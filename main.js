@@ -446,7 +446,7 @@ class AudioSubsystemIntegrationManager {
     checkNodeHealth() {
         return new Promise((resolve) => {
             const config = SystemConfigurationManager.lavalink;
-            const url = `http${config.secure ? 's' : ''}://${config.host}:${config.port}/version`;
+            const url = `http${config.secure ? 's' : ''}://${config.host}:${config.port}/v4/info`;
             const transport = config.secure ? https : http;
             const req = transport.get(url, { headers: { Authorization: config.password }, timeout: 4000 }, (res) => {
                 let data = '';
